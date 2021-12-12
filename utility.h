@@ -7,11 +7,6 @@
 #include <cstdlib>
 #include <random>
 
-// Common Headers
-
-#include "ray.h"
-#include "vec3.h"
-
 // Usings
 
 using std::shared_ptr;
@@ -45,5 +40,10 @@ inline double clamp(double x, double min, double max) {
     if (x > max) return max;
     return x;
 }
+
+// Common Headers
+
+#include "ray.h"
+#include "vec3.h"
 
 #endif //TRACERGEN_UTILITY_H
