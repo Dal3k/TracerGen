@@ -43,5 +43,4 @@ bool sphere::hit(const ray &r, double t_min, double t_max, hit_record &rec) cons
     return true;
 }
 
-
 #endif //TRACERGEN_SPHERE_H
