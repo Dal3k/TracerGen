@@ -3,4 +3,4 @@ project(TracerGen)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(TracerGen main.cpp vec3.h color.h ray.h hittable.h)
+add_executable(TracerGen main.cpp vec3.h color.h ray.h hittable.h sphere.h)
