@@ -1,9 +1,6 @@
 #ifndef TRACERGEN_CAMERA_H
 #define TRACERGEN_CAMERA_H
 
-#ifndef CAMERA_H
-#define CAMERA_H
-
 #include "utility.h"
 
 class camera {
@@ -30,4 +27,5 @@ private:
     vec3 horizontal;
     vec3 vertical;
 };
+
 #endif //TRACERGEN_CAMERA_H
