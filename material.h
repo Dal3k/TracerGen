@@ -2,7 +2,6 @@
 #define TRACERGEN_MATERIAL_H
 
 #include "utility.h"
-#include "ray.h"
 
 struct hit_record;
 

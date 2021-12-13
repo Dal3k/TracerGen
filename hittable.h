@@ -1,7 +1,7 @@
 #ifndef TRACERGEN_HITTABLE_H
 #define TRACERGEN_HITTABLE_H
 
-#include "ray.h"
+#include "utility.h"
 #include "material.h"
 
 struct hit_record {
