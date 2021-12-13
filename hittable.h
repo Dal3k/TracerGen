@@ -2,7 +2,8 @@
 #define TRACERGEN_HITTABLE_H
 
 #include "utility.h"
-#include "material.h"
+
+class material;
 
 struct hit_record {
     point3 p;
