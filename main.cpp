@@ -43,12 +43,12 @@ hittable_list random_scene() {
             if ((center - point3(4, 0.2, 0)).length() > 0.9) {
                 shared_ptr<material> sphere_material;
 
-                if (choose_mat < 0.8) {
+                if (choose_mat < 0.6) {
                     // diffuse
                     auto albedo = color(random_double(), random_double(), random_double());
                     sphere_material = make_shared<lambertian>(albedo);
                     world.add(make_shared<sphere>(center, 0.2, sphere_material));
-                } else if (choose_mat < 0.95) {
+                } else if (choose_mat < 0.79) {
                     // metal
                     auto albedo = color(random_double(), random_double(), random_double());;
                     auto fuzz = random_double(0, 0.5);
@@ -66,10 +66,10 @@ hittable_list random_scene() {
     auto material1 = make_shared<dielectric>(1.5);
     world.add(make_shared<sphere>(point3(0, 1, 0), 1.0, material1));
 
-    auto material2 = make_shared<lambertian>(color(0.4, 0.2, 0.1));
+    auto material2 = make_shared<lambertian>(color(0.4, 0.6, 0.2));
     world.add(make_shared<sphere>(point3(-4, 1, 0), 1.0, material2));
 
-    auto material3 = make_shared<metal>(color(0.7, 0.6, 0.5), 0.0);
+    auto material3 = make_shared<metal>(color(0.7, 0.6, 0.5), 0.2);
     world.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
 
     return world;
@@ -79,11 +79,11 @@ hittable_list random_scene() {
 int main() {
     // Image
 
-    const auto aspect_ratio = 3.0 / 2.0;
-    const int image_width = 400;
-    const int image_height = static_cast<int>(image_width / aspect_ratio);
-    const int samples_per_pixel = 30;
-    const int max_depth = 5;
+    const auto aspect_ratio = 16.0 / 9.0;
+    const int image_height = 1080;
+    const int image_width = static_cast<int>(image_height * aspect_ratio);
+    const int samples_per_pixel = 100;
+    const int max_depth = 10;
     std::ofstream myfile;
     myfile.open("image.ppm");
 
