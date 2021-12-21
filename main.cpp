@@ -48,7 +48,7 @@ hittable_list random_scene() {
                 if (choose_mat < 0.8) {
                     // diffuse
                     auto albedo = color(random_double(), random_double(), random_double()) *
-                            color(random_double(), random_double(), random_double());
+                                  color(random_double(), random_double(), random_double());
                     sphere_material = make_shared<lambertian>(albedo);
                     auto center2 = center + vec3(0, random_double(0, .5), 0);
                     world.add(make_shared<moving_sphere>(
@@ -80,6 +80,17 @@ hittable_list random_scene() {
     return world;
 }
 
+hittable_list two_spheres() {
+    hittable_list objects;
+
+    auto checker = make_shared<checker_texture>(color(0.2, 0.3, 0.1), color(0.9, 0.9, 0.9));
+
+    objects.add(make_shared<sphere>(point3(0, -10, 0), 10, make_shared<lambertian>(checker)));
+    objects.add(make_shared<sphere>(point3(0, 10, 0), 10, make_shared<lambertian>(checker)));
+
+    return objects;
+}
+
 
 int main() {
     // Image
@@ -88,13 +99,36 @@ int main() {
     const int image_height = 1080;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 100;
-    const int max_depth = 10;
+    const int max_depth = 5;
     std::ofstream myfile;
     myfile.open("image.ppm");
 
     // World
 
-    auto world = random_scene();
+    hittable_list world;
+
+    point3 lookfrom;
+    point3 lookat;
+    auto vfov = 40.0;
+    auto aperture = 0.0;
+
+    switch (0) {
+        case 1:
+            world = random_scene();
+            lookfrom = point3(13, 2, 3);
+            lookat = point3(0, 0, 0);
+            vfov = 20.0;
+            aperture = 0.1;
+            break;
+
+        default:
+        case 2:
+            world = two_spheres();
+            lookfrom = point3(13, 2, 3);
+            lookat = point3(0, 0, 0);
+            vfov = 20.0;
+            break;
+    }
 
     // Camera
 
