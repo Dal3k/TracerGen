@@ -27,6 +27,10 @@ public:
         auto u = p.x() - floor(p.x());
         auto v = p.y() - floor(p.y());
         auto w = p.z() - floor(p.z());
+        u = u * u * (3 - 2 * u);
+        v = v * v * (3 - 2 * v);
+        w = w * w * (3 - 2 * w);
+
 
         auto i = static_cast<int>(floor(p.x()));
         auto j = static_cast<int>(floor(p.y()));
@@ -74,12 +78,12 @@ private:
 
     static double trilinear_interp(double c[2][2][2], double u, double v, double w) {
         auto accum = 0.0;
-        for (int i=0; i < 2; i++)
-            for (int j=0; j < 2; j++)
-                for (int k=0; k < 2; k++)
-                    accum += (i*u + (1-i)*(1-u))*
-                             (j*v + (1-j)*(1-v))*
-                             (k*w + (1-k)*(1-w))*c[i][j][k];
+        for (int i = 0; i < 2; i++)
+            for (int j = 0; j < 2; j++)
+                for (int k = 0; k < 2; k++)
+                    accum += (i * u + (1 - i) * (1 - u)) *
+                             (j * v + (1 - j) * (1 - v)) *
+                             (k * w + (1 - k) * (1 - w)) * c[i][j][k];
 
         return accum;
     }
