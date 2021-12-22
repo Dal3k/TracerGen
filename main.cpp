@@ -128,8 +128,8 @@ hittable_list moon() {
 
 void worker(struct image_settings &settings, std::vector<color> *image, int max_thread,
             int thread, camera &cam, hittable_list &world) {
-    for (int i = thread; i < settings.image_height; i += max_thread) {
-        for (int j = 0; j < settings.image_width; ++j) {
+    for (int j = thread; j < settings.image_height; j += max_thread) {
+        for (int i = 0; i < settings.image_width; ++i) {
             color pixel_color(0, 0, 0);
             for (int s = 0; s < settings.samples_per_pixel; ++s) {
                 auto u = (i + random_double()) / (settings.image_width - 1);
@@ -137,7 +137,7 @@ void worker(struct image_settings &settings, std::vector<color> *image, int max_
                 ray r = cam.get_ray(u, v);
                 pixel_color += ray_color(r, world, settings.max_depth);
             }
-            (*image)[i * settings.image_width + j] = pixel_color;
+            (*image)[j * settings.image_width + i] = pixel_color;
         }
     }
 }
@@ -147,7 +147,7 @@ int main() {
     // Image
 
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_height = 480;
+    const int image_height = 1080;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 50;
     const int max_depth = 5;
@@ -169,7 +169,7 @@ int main() {
     auto vfov = 40.0;
     auto aperture = 0.0;
 
-    switch (2) {
+    switch (1) {
         case 1:
             world = random_scene();
             lookfrom = point3(13, 2, 3);
