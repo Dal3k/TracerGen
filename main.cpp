@@ -10,6 +10,13 @@
 #include "material.h"
 #include "moving_sphere.h"
 
+struct image_settings {
+    int image_height;
+    int image_width;
+    int samples_per_pixel;
+    int max_depth;
+};
+
 
 color ray_color(const ray &r, const hittable &world, int depth) {
     hit_record rec;
@@ -117,6 +124,24 @@ hittable_list moon() {
     return hittable_list(globe);
 }
 
+
+void worker(struct image_settings &settings, std::vector<color> &image, int max_thread,
+            int thread, camera &cam, hittable_list &world) {
+    for (int i = thread; i < settings.image_height; i += max_thread) {
+        for (int j = 0; j < settings.image_width; ++j) {
+            color pixel_color(0, 0, 0);
+            for (int s = 0; s < settings.samples_per_pixel; ++s) {
+                auto u = (i + random_double()) / (settings.image_width - 1);
+                auto v = (j + random_double()) / (settings.image_height - 1);
+                ray r = cam.get_ray(u, v);
+                pixel_color += ray_color(r, world, settings.max_depth);
+            }
+            image[i * settings.image_width + j] = pixel_color;
+        }
+    }
+}
+
+
 int main() {
     // Image
 
@@ -127,6 +152,7 @@ int main() {
     const int max_depth = 5;
     std::ofstream myfile;
     myfile.open("image.ppm");
+    std::vector<color> image(image_height * image_width);
 
     // World
 
