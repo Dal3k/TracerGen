@@ -11,24 +11,25 @@
 #include "moving_sphere.h"
 
 
-color ray_color(const ray &r, const hittable &world, int depth) {
+color ray_color(const ray &r, const color &background, const hittable &world, int depth) {
     hit_record rec;
 
     // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0)
         return color(0, 0, 0);
 
-    if (world.hit(r, 0.001, infinity, rec)) {
-        ray scattered;
-        color attenuation;
-        if (rec.mat_ptr->scatter(r, rec, attenuation, scattered))
-            return attenuation * ray_color(scattered, world, depth - 1);
-        return color(0, 0, 0);
-    }
+    // If the ray hits nothing, return the background color.
+    if (!world.hit(r, 0.001, infinity, rec))
+        return background;
 
-    vec3 unit_direction = unit_vector(r.direction());
-    auto t = 0.5 * (unit_direction.y() + 1.0);
-    return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
+    ray scattered;
+    color attenuation;
+    color emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
+
+    if (!rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+        return emitted;
+
+    return emitted + attenuation * ray_color(scattered, background, world, depth - 1);
 }
 
 hittable_list random_scene() {
@@ -94,7 +95,7 @@ hittable_list two_spheres() {
 hittable_list two_perlin_spheres() {
     hittable_list objects;
 
-    auto pertext = make_shared<noise_texture>(4);
+    auto pertext = make_shared<noise_texture>(6);
     objects.add(make_shared<sphere>(point3(0, -1000, 0), 1000, make_shared<lambertian>(pertext)));
     objects.add(make_shared<sphere>(point3(0, 2, 0), 2, make_shared<lambertian>(pertext)));
 
@@ -121,10 +122,10 @@ int main() {
     // Image
 
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_height = 1080;
+    const int image_height = 480;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 50;
-    const int max_depth = 5;
+    const int max_depth = 3;
     std::ofstream myfile;
     myfile.open("image.ppm");
 
@@ -136,10 +137,12 @@ int main() {
     point3 lookat;
     auto vfov = 40.0;
     auto aperture = 0.0;
+    color background(0, 0, 0);
 
     switch (0) {
         case 1:
             world = random_scene();
+            background = color(0.70, 0.80, 1.00);
             lookfrom = point3(13, 2, 3);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
@@ -147,22 +150,28 @@ int main() {
             break;
         case 2:
             world = two_spheres();
+            background = color(0.70, 0.80, 1.00);
             lookfrom = point3(13, 2, 3);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
             break;
         case 3:
             world = two_perlin_spheres();
+            background = color(0.70, 0.80, 1.00);
+            lookfrom = point3(13, 2, 3);
+            lookat = point3(0, 0, 0);
+            vfov = 20.0;
+            break;
+        case 4:
+            world = moon();
+            background = color(0.70, 0.80, 1.00);
             lookfrom = point3(13, 2, 3);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
             break;
         default:
-        case 4:
-            world = moon();
-            lookfrom = point3(13, 2, 3);
-            lookat = point3(0, 0, 0);
-            vfov = 20.0;
+        case 5:
+            background = color(0.0, 0.0, 0.0);
             break;
     }
 
@@ -187,7 +196,7 @@ int main() {
                 auto u = (i + random_double()) / (image_width - 1);
                 auto v = (j + random_double()) / (image_height - 1);
                 ray r = cam.get_ray(u, v);
-                pixel_color += ray_color(r, world, max_depth);
+                pixel_color += ray_color(r, background, world, max_depth);
             }
             write_color(myfile, pixel_color, samples_per_pixel);
         }
