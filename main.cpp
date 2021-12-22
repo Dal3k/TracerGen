@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <thread>
 
 #include "utility.h"
 
@@ -125,7 +126,7 @@ hittable_list moon() {
 }
 
 
-void worker(struct image_settings &settings, std::vector<color> &image, int max_thread,
+void worker(struct image_settings &settings, std::vector<color> *image, int max_thread,
             int thread, camera &cam, hittable_list &world) {
     for (int i = thread; i < settings.image_height; i += max_thread) {
         for (int j = 0; j < settings.image_width; ++j) {
@@ -136,7 +137,7 @@ void worker(struct image_settings &settings, std::vector<color> &image, int max_
                 ray r = cam.get_ray(u, v);
                 pixel_color += ray_color(r, world, settings.max_depth);
             }
-            image[i * settings.image_width + j] = pixel_color;
+            (*image)[i * settings.image_width + j] = pixel_color;
         }
     }
 }
@@ -146,13 +147,18 @@ int main() {
     // Image
 
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_height = 1080;
+    const int image_height = 480;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 50;
     const int max_depth = 5;
+    const int max_thread = 8;
+
     std::ofstream myfile;
     myfile.open("image.ppm");
-    std::vector<color> image(image_height * image_width);
+    auto *image = new std::vector<color>(image_height * image_width);
+    std::vector<std::thread> threads;
+
+    struct image_settings settings = {image_height, image_width, samples_per_pixel, max_depth};
 
     // World
 
@@ -163,7 +169,7 @@ int main() {
     auto vfov = 40.0;
     auto aperture = 0.0;
 
-    switch (0) {
+    switch (2) {
         case 1:
             world = random_scene();
             lookfrom = point3(13, 2, 3);
@@ -203,21 +209,21 @@ int main() {
 
     myfile << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
-    for (int j = image_height - 1; j >= 0; --j) {
-        std::cout << "Progression: " << ((static_cast<double>(image_height) -
-                                          static_cast<double>(j)) / static_cast<double>(image_height) * 100) << '%'
-                  << '\n' << std::flush;
-        for (int i = 0; i < image_width; ++i) {
-            color pixel_color(0, 0, 0);
-            for (int s = 0; s < samples_per_pixel; ++s) {
-                auto u = (i + random_double()) / (image_width - 1);
-                auto v = (j + random_double()) / (image_height - 1);
-                ray r = cam.get_ray(u, v);
-                pixel_color += ray_color(r, world, max_depth);
-            }
-            write_color(myfile, pixel_color, samples_per_pixel);
+    threads.reserve(max_thread);
+    for (int i = 0; i < max_thread; ++i) {
+        threads.emplace_back(worker, settings, image, max_thread, i, cam, world);
+    }
+
+    for (auto &thread: threads) {
+        thread.join();
+    }
+
+    for (int i = image_height - 1; i >= 0; i--) {
+        for (int j = 0; j < image_width; ++j) {
+            write_color(myfile, (*image)[i * image_width + j], samples_per_pixel);
         }
     }
+
     std::cout << "\nDone!\n";
     myfile.close();
     return 0;
