@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <thread>
 
 #include "utility.h"
 
@@ -10,6 +11,14 @@
 #include "material.h"
 #include "moving_sphere.h"
 #include "aarect.h"
+
+struct image_settings {
+    int image_height;
+    int image_width;
+    int samples_per_pixel;
+    int max_depth;
+    color background;
+};
 
 
 color ray_color(const ray &r, const color &background, const hittable &world, int depth) {
@@ -96,7 +105,7 @@ hittable_list two_spheres() {
 hittable_list two_perlin_spheres() {
     hittable_list objects;
 
-    auto pertext = make_shared<noise_texture>(6);
+    auto pertext = make_shared<noise_texture>(4);
     objects.add(make_shared<sphere>(point3(0, -1000, 0), 1000, make_shared<lambertian>(pertext)));
     objects.add(make_shared<sphere>(point3(0, 2, 0), 2, make_shared<lambertian>(pertext)));
 
@@ -132,16 +141,40 @@ hittable_list simple_light() {
     return objects;
 }
 
+
+void worker(struct image_settings &settings, std::vector<color> *image, int max_thread,
+            int thread, camera &cam, hittable_list &world) {
+    for (int j = thread; j < settings.image_height; j += max_thread) {
+        for (int i = 0; i < settings.image_width; ++i) {
+            color pixel_color(0, 0, 0);
+            for (int s = 0; s < settings.samples_per_pixel; ++s) {
+                auto u = (i + random_double()) / (settings.image_width - 1);
+                auto v = (j + random_double()) / (settings.image_height - 1);
+                ray r = cam.get_ray(u, v);
+                pixel_color += ray_color(r, settings.background, world, settings.max_depth);
+            }
+            (*image)[j * settings.image_width + i] = pixel_color;
+        }
+    }
+}
+
+
 int main() {
     // Image
 
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_height = 480;
+    const int image_height = 1080;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 400;
     const int max_depth = 5;
+    const int max_thread = 8;
+
     std::ofstream myfile;
     myfile.open("image.ppm");
+    auto *image = new std::vector<color>(image_height * image_width);
+    std::vector<std::thread> threads;
+    color back = color(0.70, 0.80, 1.00);
+    struct image_settings settings = {image_height, image_width, samples_per_pixel, max_depth, back};
 
     // World
 
@@ -156,7 +189,7 @@ int main() {
     switch (0) {
         case 1:
             world = random_scene();
-            background = color(0.70, 0.80, 1.00);
+            settings.background = color(0.70, 0.80, 1.00);
             lookfrom = point3(13, 2, 3);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
@@ -164,21 +197,21 @@ int main() {
             break;
         case 2:
             world = two_spheres();
-            background = color(0.70, 0.80, 1.00);
+            settings.background = color(0.70, 0.80, 1.00);
             lookfrom = point3(13, 2, 3);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
             break;
         case 3:
             world = two_perlin_spheres();
-            background = color(0.70, 0.80, 1.00);
+            settings.background = color(0.70, 0.80, 1.00);
             lookfrom = point3(13, 2, 3);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
             break;
         case 4:
             world = moon();
-            background = color(0.70, 0.80, 1.00);
+            settings.background = color(0.70, 0.80, 1.00);
             lookfrom = point3(13, 2, 3);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
@@ -186,7 +219,7 @@ int main() {
         default:
         case 5:
             world = simple_light();
-            background = color(0, 0, 0);
+            settings.background = color(0, 0, 0);
             lookfrom = point3(26, 3, 6);
             lookat = point3(0, 2, 0);
             vfov = 20.0;
@@ -204,19 +237,18 @@ int main() {
 
     myfile << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
-    for (int j = image_height - 1; j >= 0; --j) {
-        std::cout << "Progression: " << ((static_cast<double>(image_height) -
-                                          static_cast<double>(j)) / static_cast<double>(image_height) * 100) << '%'
-                  << '\n' << std::flush;
-        for (int i = 0; i < image_width; ++i) {
-            color pixel_color(0, 0, 0);
-            for (int s = 0; s < samples_per_pixel; ++s) {
-                auto u = (i + random_double()) / (image_width - 1);
-                auto v = (j + random_double()) / (image_height - 1);
-                ray r = cam.get_ray(u, v);
-                pixel_color += ray_color(r, background, world, max_depth);
-            }
-            write_color(myfile, pixel_color, samples_per_pixel);
+    threads.reserve(max_thread);
+    for (int i = 0; i < max_thread; ++i) {
+        threads.emplace_back(worker, settings, image, max_thread, i, cam, world);
+    }
+
+    for (auto &thread: threads) {
+        thread.join();
+    }
+
+    for (int i = image_height - 1; i >= 0; i--) {
+        for (int j = 0; j < image_width; ++j) {
+            write_color(myfile, (*image)[i * image_width + j], samples_per_pixel);
         }
     }
     std::cout << "\nDone!\n";
