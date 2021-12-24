@@ -145,6 +145,7 @@ hittable_list simple_light() {
 void worker(struct image_settings &settings, std::vector<color> *image, int max_thread,
             int thread, camera &cam, hittable_list &world) {
     for (int j = thread; j < settings.image_height; j += max_thread) {
+        std::cout << j << "\n";
         for (int i = 0; i < settings.image_width; ++i) {
             color pixel_color(0, 0, 0);
             for (int s = 0; s < settings.samples_per_pixel; ++s) {
