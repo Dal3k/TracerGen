@@ -126,7 +126,7 @@ hittable_list moon() {
 }
 
 
-void worker(struct image_settings &settings, std::vector<color> *image, int max_thread,
+void worker(struct image_settings &settings, const std::shared_ptr<std::vector<color>>& image, int max_thread,
             int thread, camera &cam, hittable_list &world) {
     for (int j = thread; j < settings.image_height; j += max_thread) {
         for (int i = 0; i < settings.image_width; ++i) {
@@ -155,7 +155,7 @@ int main() {
 
     std::ofstream myfile;
     myfile.open("image.ppm");
-    auto *image = new std::vector<color>(image_height * image_width);
+    auto image = std::make_shared<std::vector<color>>(image_height * image_width);
     std::vector<std::thread> threads;
 
     struct image_settings settings = {image_height, image_width, samples_per_pixel, max_depth};
@@ -211,7 +211,7 @@ int main() {
 
     threads.reserve(max_thread);
     for (int i = 0; i < max_thread; ++i) {
-        threads.emplace_back(worker, settings, image, max_thread, i, cam, world);
+        threads.emplace_back(worker, std::ref(settings), std::ref(image), max_thread, i, std::ref(cam), std::ref(world));
     }
 
     for (auto &thread: threads) {
