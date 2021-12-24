@@ -113,7 +113,7 @@ inline vec3 unit_vector(vec3 v) {
     return v / v.length();
 }
 
-inline static vec3 random() {
+inline static vec3 vecrand() {
     return vec3(random_double(), random_double(), random_double());
 }
 
