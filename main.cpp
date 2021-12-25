@@ -11,6 +11,7 @@
 #include "camera.h"
 #include "material.h"
 #include "moving_sphere.h"
+#include "box.h"
 
 
 struct image_settings {
@@ -156,12 +157,13 @@ hittable_list cornell_box() {
     objects.add(make_shared<xz_rect>(0, 555, 0, 555, 0, white));
     objects.add(make_shared<xz_rect>(0, 555, 0, 555, 555, white));
     objects.add(make_shared<xy_rect>(0, 555, 0, 555, 555, white));
+    objects.add(make_shared<box>(point3(130, 0, 65), point3(295, 165, 230), white));
+    objects.add(make_shared<box>(point3(265, 0, 295), point3(430, 330, 460), white));
 
     return objects;
 }
 
-
-void worker(struct image_settings &settings, const std::shared_ptr<std::vector<color>>& image, int max_thread,
+void worker(struct image_settings &settings, const std::shared_ptr<std::vector<color>> &image, int max_thread,
             int thread, camera &cam, hittable_list &world) {
     for (int j = thread; j < settings.image_height; j += max_thread) {
         std::cout << j << "\n";
@@ -186,8 +188,8 @@ int main() {
     const int image_height = 480;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 200;
-    const int max_depth = 50;
-    const int max_thread = 8;
+    const int max_depth = 10;
+    const int max_thread = 12;
 
     std::ofstream myfile;
     myfile.open("image.ppm");
@@ -266,7 +268,8 @@ int main() {
 
     threads.reserve(max_thread);
     for (int i = 0; i < max_thread; ++i) {
-        threads.emplace_back(worker, std::ref(settings), std::ref(image), max_thread, i, std::ref(cam), std::ref(world));
+        threads.emplace_back(worker, std::ref(settings), std::ref(image), max_thread, i, std::ref(cam),
+                             std::ref(world));
     }
 
     for (auto &thread: threads) {
