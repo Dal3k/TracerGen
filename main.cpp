@@ -4,6 +4,7 @@
 
 #include "utility.h"
 
+#include "aarect.h"
 #include "color.h"
 #include "hittable_list.h"
 #include "sphere.h"
@@ -11,32 +12,35 @@
 #include "material.h"
 #include "moving_sphere.h"
 
+
 struct image_settings {
     int image_height;
     int image_width;
     int samples_per_pixel;
     int max_depth;
+    color background;
 };
 
 
-color ray_color(const ray &r, const hittable &world, int depth) {
+color ray_color(const ray &r, const color &background, const hittable &world, int depth) {
     hit_record rec;
 
     // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0)
         return color(0, 0, 0);
 
-    if (world.hit(r, 0.001, infinity, rec)) {
-        ray scattered;
-        color attenuation;
-        if (rec.mat_ptr->scatter(r, rec, attenuation, scattered))
-            return attenuation * ray_color(scattered, world, depth - 1);
-        return color(0, 0, 0);
-    }
+    // If the ray hits nothing, return the background color.
+    if (!world.hit(r, 0.001, infinity, rec))
+        return background;
 
-    vec3 unit_direction = unit_vector(r.direction());
-    auto t = 0.5 * (unit_direction.y() + 1.0);
-    return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
+    ray scattered;
+    color attenuation;
+    color emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
+
+    if (!rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+        return emitted;
+
+    return emitted + attenuation * ray_color(scattered, background, world, depth - 1);
 }
 
 hittable_list random_scene() {
@@ -125,17 +129,49 @@ hittable_list moon() {
     return hittable_list(globe);
 }
 
+hittable_list simple_light() {
+    hittable_list objects;
+
+    auto pertext = make_shared<noise_texture>(4);
+    objects.add(make_shared<sphere>(point3(0, -1000, 0), 1000, make_shared<lambertian>(pertext)));
+    objects.add(make_shared<sphere>(point3(0, 2, 0), 2, make_shared<lambertian>(pertext)));
+
+    auto difflight = make_shared<diffuse_light>(color(4, 4, 4));
+    objects.add(make_shared<xy_rect>(3, 5, 1, 3, -2, difflight));
+
+    return objects;
+}
+
+hittable_list cornell_box() {
+    hittable_list objects;
+
+    auto red = make_shared<lambertian>(color(.65, .05, .05));
+    auto white = make_shared<lambertian>(color(.73, .73, .73));
+    auto green = make_shared<lambertian>(color(.12, .45, .15));
+    auto light = make_shared<diffuse_light>(color(15, 15, 15));
+
+    objects.add(make_shared<yz_rect>(0, 555, 0, 555, 555, green));
+    objects.add(make_shared<yz_rect>(0, 555, 0, 555, 0, red));
+    objects.add(make_shared<xz_rect>(213, 343, 227, 332, 554, light));
+    objects.add(make_shared<xz_rect>(0, 555, 0, 555, 0, white));
+    objects.add(make_shared<xz_rect>(0, 555, 0, 555, 555, white));
+    objects.add(make_shared<xy_rect>(0, 555, 0, 555, 555, white));
+
+    return objects;
+}
+
 
 void worker(struct image_settings &settings, const std::shared_ptr<std::vector<color>>& image, int max_thread,
             int thread, camera &cam, hittable_list &world) {
     for (int j = thread; j < settings.image_height; j += max_thread) {
+        std::cout << j << "\n";
         for (int i = 0; i < settings.image_width; ++i) {
             color pixel_color(0, 0, 0);
             for (int s = 0; s < settings.samples_per_pixel; ++s) {
                 auto u = (i + random_double()) / (settings.image_width - 1);
                 auto v = (j + random_double()) / (settings.image_height - 1);
                 ray r = cam.get_ray(u, v);
-                pixel_color += ray_color(r, world, settings.max_depth);
+                pixel_color += ray_color(r, settings.background, world, settings.max_depth);
             }
             (*image)[j * settings.image_width + i] = pixel_color;
         }
@@ -146,19 +182,19 @@ void worker(struct image_settings &settings, const std::shared_ptr<std::vector<c
 int main() {
     // Image
 
-    const auto aspect_ratio = 16.0 / 9.0;
-    const int image_height = 1080;
+    const auto aspect_ratio = 1;
+    const int image_height = 480;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
-    const int samples_per_pixel = 50;
-    const int max_depth = 5;
+    const int samples_per_pixel = 200;
+    const int max_depth = 50;
     const int max_thread = 8;
 
     std::ofstream myfile;
     myfile.open("image.ppm");
     auto image = std::make_shared<std::vector<color>>(image_height * image_width);
     std::vector<std::thread> threads;
-
-    struct image_settings settings = {image_height, image_width, samples_per_pixel, max_depth};
+    color back = color(0, 0, 0);
+    struct image_settings settings = {image_height, image_width, samples_per_pixel, max_depth, back};
 
     // World
 
@@ -168,10 +204,12 @@ int main() {
     point3 lookat;
     auto vfov = 40.0;
     auto aperture = 0.0;
+    color background(0, 0, 0);
 
-    switch (1) {
+    switch (0) {
         case 1:
             world = random_scene();
+            settings.background = color(0.70, 0.80, 1.00);
             lookfrom = point3(13, 2, 3);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
@@ -179,22 +217,39 @@ int main() {
             break;
         case 2:
             world = two_spheres();
+            settings.background = color(0.70, 0.80, 1.00);
             lookfrom = point3(13, 2, 3);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
             break;
         case 3:
             world = two_perlin_spheres();
+            settings.background = color(0.70, 0.80, 1.00);
             lookfrom = point3(13, 2, 3);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
             break;
-        default:
         case 4:
             world = moon();
+            settings.background = color(0.70, 0.80, 1.00);
             lookfrom = point3(13, 2, 3);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
+            break;
+        case 5:
+            world = simple_light();
+            settings.background = color(0, 0, 0);
+            lookfrom = point3(26, 3, 6);
+            lookat = point3(0, 2, 0);
+            vfov = 20.0;
+            break;
+        default:
+        case 6:
+            world = cornell_box();
+            background = color(0, 0, 0);
+            lookfrom = point3(278, 278, -800);
+            lookat = point3(278, 278, 0);
+            vfov = 40.0;
             break;
     }
 
@@ -203,7 +258,7 @@ int main() {
     vec3 vup(0, 1, 0);
     auto dist_to_focus = 10.0;
 
-    camera cam(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
+    camera cam(lookfrom, lookat, vup, vfov, aspect_ratio, aperture, dist_to_focus);
 
     // Render
 
@@ -223,7 +278,6 @@ int main() {
             write_color(myfile, (*image)[i * image_width + j], samples_per_pixel);
         }
     }
-
     std::cout << "\nDone!\n";
     myfile.close();
     return 0;
