@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <thread>
+#include <chrono>
+
 
 #include "utility.h"
 
@@ -267,10 +269,24 @@ hittable_list final_scene() {
     return objects;
 }
 
+void print_progress(double progress) {
+    int bar_width = 50;
+
+    std::cout << "[";
+    int pos = static_cast<int>(bar_width * progress);
+    for (int i = 0; i < bar_width; ++i) {
+        if (i < pos) std::cout << "=";
+        else if (i == pos) std::cout << ">";
+        else std::cout << " ";
+    }
+    std::cout << "] " << static_cast<int>(progress * 100.0) << " %\r";
+    std::cout.flush();
+}
+
+
 void worker(struct image_settings &settings, const std::shared_ptr<std::vector<color>> &image, int max_thread,
-            int thread, camera &cam, hittable_list &world) {
+            int thread, camera &cam, hittable_list &world, std::atomic<int> &lines_rendered) {
     for (int j = thread; j < settings.image_height; j += max_thread) {
-        std::cout << j << "\n";
         for (int i = 0; i < settings.image_width; ++i) {
             color pixel_color(0, 0, 0);
             for (int s = 0; s < settings.samples_per_pixel; ++s) {
@@ -281,6 +297,9 @@ void worker(struct image_settings &settings, const std::shared_ptr<std::vector<c
             }
             (*image)[j * settings.image_width + i] = pixel_color;
         }
+        lines_rendered++;
+        double progress = static_cast<double>(lines_rendered) / settings.image_height;
+        print_progress(progress);
     }
 }
 
@@ -294,6 +313,8 @@ int main() {
     const int samples_per_pixel = 300;
     const int max_depth = 10;
     const int max_thread = 8;
+
+    std::atomic<int> lines_rendered(0);
 
     std::ofstream myfile;
     myfile.open("image.ppm");
@@ -386,7 +407,7 @@ int main() {
     threads.reserve(max_thread);
     for (int i = 0; i < max_thread; ++i) {
         threads.emplace_back(worker, std::ref(settings), std::ref(image), max_thread, i, std::ref(cam),
-                             std::ref(world));
+                             std::ref(world), std::ref(lines_rendered));
     }
 
     for (auto &thread: threads) {
