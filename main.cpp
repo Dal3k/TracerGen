@@ -340,9 +340,9 @@ int main() {
 
     const int image_height = 500;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
-    const int samples_per_pixel = 100;
-    const int max_depth = 50;
-    const int max_thread = 8;
+    const int samples_per_pixel = 400;
+    const int max_depth = 5;
+    const int max_thread = 10;
 
     std::atomic<int> lines_rendered(0);
 
@@ -361,7 +361,7 @@ int main() {
     auto aperture = 0.0;
     color background(0, 0, 0);
 
-    switch (3) {
+    switch (1) {
 
         case 1:
             world = random_scene();
