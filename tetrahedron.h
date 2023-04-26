@@ -1,15 +1,15 @@
-#ifndef TRACERGEN_PYRAMID_H
-#define TRACERGEN_PYRAMID_H
+#ifndef TRACERGEN_TETRAHEDRON_H
+#define TRACERGEN_TETRAHEDRON_H
 
 #include "hittable_list.h"
 #include "triangle.h"
 #include "vec3.h"
 
-class pyramid : public hittable {
+class tetrahedron : public hittable {
 public:
-    pyramid() {}
+    tetrahedron() {}
 
-    pyramid(const point3& base_center, double height, double base_side_length, shared_ptr<material> mat)
+    tetrahedron(const point3& base_center, double height, double base_side_length, shared_ptr<material> mat)
             : mat_ptr(mat) {
         point3 a = base_center + vec3(-base_side_length / 2, 0, -base_side_length / 2);
         point3 b = base_center + vec3(-base_side_length / 2, 0, base_side_length / 2);
@@ -36,4 +36,4 @@ public:
     shared_ptr<material> mat_ptr;
 };
 
-#endif // TRACERGEN_PYRAMID_H
+#endif // TRACERGEN_TETRAHEDRON_H
