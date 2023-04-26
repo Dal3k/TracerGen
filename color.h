@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-void write_color(std::ostream &out, color pixel_color, int samples_per_pixel) {
+void write_color(std::vector<unsigned char> &image_data, int index, color pixel_color, int samples_per_pixel) {
     auto r = pixel_color.x();
     auto g = pixel_color.y();
     auto b = pixel_color.z();
@@ -17,9 +17,9 @@ void write_color(std::ostream &out, color pixel_color, int samples_per_pixel) {
     b = sqrt(scale * b);
 
     // Write the translated [0,255] value of each color component.
-    out << static_cast<int>(256 * clamp(r, 0.0, 0.999)) << ' '
-        << static_cast<int>(256 * clamp(g, 0.0, 0.999)) << ' '
-        << static_cast<int>(256 * clamp(b, 0.0, 0.999)) << '\n';
+    image_data[index * 3 + 0] = static_cast<int>(256 * clamp(r, 0.0, 0.999));
+    image_data[index * 3 + 1] = static_cast<int>(256 * clamp(g, 0.0, 0.999));
+    image_data[index * 3 + 2] = static_cast<int>(256 * clamp(b, 0.0, 0.999));
 }
 
 #endif //TRACERGEN_COLOR_H

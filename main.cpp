@@ -1,3 +1,6 @@
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 #include <iostream>
 #include <fstream>
 #include <thread>
@@ -334,16 +337,13 @@ int main() {
     // Image
 
     const auto aspect_ratio = 4.0 / 3.0;
-    const int image_height = 2160;
+
+    const int image_height = 500;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
-    const int samples_per_pixel = 300;
-    const int max_depth = 10;
+    const int samples_per_pixel = 100;
+    const int max_depth = 50;
     const int max_thread = 8;
 
-    std::atomic<int> lines_rendered(0);
-
-    std::ofstream myfile;
-    myfile.open("image.ppm");
     auto image = std::make_shared<std::vector<color>>(image_height * image_width);
     std::vector<std::thread> threads;
     color back = color(0, 0, 0);
@@ -360,6 +360,7 @@ int main() {
     color background(0, 0, 0);
 
     switch (3) {
+
         case 1:
             world = random_scene();
             settings.background = color(0.70, 0.80, 1.00);
@@ -428,8 +429,6 @@ int main() {
 
     // Render
 
-    myfile << "P3\n" << image_width << ' ' << image_height << "\n255\n";
-
     threads.reserve(max_thread);
     for (int i = 0; i < max_thread; ++i) {
         threads.emplace_back(worker, std::ref(settings), std::ref(image), max_thread, i, std::ref(cam),
@@ -440,12 +439,16 @@ int main() {
         thread.join();
     }
 
+    std::vector<unsigned char> image_data(image_width * image_height * 3);
+
     for (int i = image_height - 1; i >= 0; i--) {
         for (int j = 0; j < image_width; ++j) {
-            write_color(myfile, (*image)[i * image_width + j], samples_per_pixel);
+            int index = (image_height - i - 1) * image_width + j;
+            write_color(image_data, index, (*image)[i * image_width + j], samples_per_pixel);
         }
     }
+
     std::cout << "\nDone!\n";
-    myfile.close();
+    stbi_write_png("image.png", image_width, image_height, 3, image_data.data(), image_width * 3);
     return 0;
 }
