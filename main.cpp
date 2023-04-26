@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 #include <thread>
+#include <chrono>
+
 
 #include "utility.h"
 
@@ -270,10 +272,50 @@ hittable_list final_scene() {
     return objects;
 }
 
+void print_formatted_time(std::ostream& os, int seconds) {
+    int hours = seconds / 3600;
+    seconds %= 3600;
+    int minutes = seconds / 60;
+    seconds %= 60;
+
+    if (hours > 0) {
+        os << hours << "h ";
+    }
+    if (minutes > 0) {
+        os << minutes << "m ";
+    }
+    os << seconds << "s";
+}
+
+void print_progress(double progress, const std::chrono::high_resolution_clock::time_point &start_time) {
+    int bar_width = 50;
+
+    auto current_time = std::chrono::high_resolution_clock::now();
+    auto elapsed_time = std::chrono::duration<double>(current_time - start_time).count();
+    auto estimated_remaining_time = elapsed_time * (1.0 - progress) / progress;
+
+    std::cout << "[";
+    int pos = static_cast<int>(bar_width * progress);
+    for (int i = 0; i < bar_width; ++i) {
+        if (i < pos) std::cout << "=";
+        else if (i == pos) std::cout << ">";
+        else std::cout << " ";
+    }
+    std::cout << "] " << static_cast<int>(progress * 100.0) << " %"
+              << " Elapsed: ";
+    print_formatted_time(std::cout, static_cast<int>(elapsed_time));
+    std::cout << " Remaining: ";
+    print_formatted_time(std::cout, static_cast<int>(estimated_remaining_time));
+    std::cout << "    \r";
+    std::cout.flush();
+}
+
+
+auto start_time = std::chrono::high_resolution_clock::now();
+
 void worker(struct image_settings &settings, const std::shared_ptr<std::vector<color>> &image, int max_thread,
-            int thread, camera &cam, hittable_list &world) {
+            int thread, camera &cam, hittable_list &world, std::atomic<int> &lines_rendered) {
     for (int j = thread; j < settings.image_height; j += max_thread) {
-        std::cout << j << "\n";
         for (int i = 0; i < settings.image_width; ++i) {
             color pixel_color(0, 0, 0);
             for (int s = 0; s < settings.samples_per_pixel; ++s) {
@@ -284,6 +326,9 @@ void worker(struct image_settings &settings, const std::shared_ptr<std::vector<c
             }
             (*image)[j * settings.image_width + i] = pixel_color;
         }
+        lines_rendered++;
+        double progress = static_cast<double>(lines_rendered) / settings.image_height;
+        print_progress(progress, start_time);
     }
 }
 
@@ -292,6 +337,7 @@ int main() {
     // Image
 
     const auto aspect_ratio = 4.0 / 3.0;
+
     const int image_height = 500;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 100;
@@ -313,7 +359,8 @@ int main() {
     auto aperture = 0.0;
     color background(0, 0, 0);
 
-    switch (1) {
+    switch (3) {
+
         case 1:
             world = random_scene();
             settings.background = color(0.70, 0.80, 1.00);
@@ -385,7 +432,7 @@ int main() {
     threads.reserve(max_thread);
     for (int i = 0; i < max_thread; ++i) {
         threads.emplace_back(worker, std::ref(settings), std::ref(image), max_thread, i, std::ref(cam),
-                             std::ref(world));
+                             std::ref(world), std::ref(lines_rendered));
     }
 
     for (auto &thread: threads) {
