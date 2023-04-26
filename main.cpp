@@ -344,6 +344,8 @@ int main() {
     const int max_depth = 50;
     const int max_thread = 8;
 
+    std::atomic<int> lines_rendered(0);
+
     auto image = std::make_shared<std::vector<color>>(image_height * image_width);
     std::vector<std::thread> threads;
     color back = color(0, 0, 0);
