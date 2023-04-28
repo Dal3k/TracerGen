@@ -19,6 +19,7 @@
 #include "box.h"
 #include "constant_medium.h"
 #include "bvh.h"
+#include "menger_sponge.h"
 
 
 struct image_settings {
