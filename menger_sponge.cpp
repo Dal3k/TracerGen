@@ -3,6 +3,7 @@
 //
 
 #include "menger_sponge.h"
+#include "box.h"
 
 MengerSponge::MengerSponge(const point3& center, double side_length, int iterations, shared_ptr<material> mat) {
     sponge = create_sponge(center, side_length, iterations, mat);

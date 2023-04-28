@@ -6,12 +6,9 @@
 #ifndef MENGER_SPONGE_H
 #define MENGER_SPONGE_H
 
-#include "utility.h"
+
 #include "hittable.h"
 #include "hittable_list.h"
-#include "box.h"
-#include "material.h"
-#include "vec3.h"
 
 class MengerSponge : public hittable {
 public:
