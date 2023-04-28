@@ -31,6 +31,7 @@ struct image_settings {
     color background;
 };
 
+auto start_time = std::chrono::high_resolution_clock::now();
 
 color ray_color(const ray &r, const color &background, const hittable &world, int depth) {
     hit_record rec;
@@ -326,8 +327,6 @@ void print_progress(double progress, const std::chrono::high_resolution_clock::t
 }
 
 
-auto start_time = std::chrono::high_resolution_clock::now();
-
 void worker(struct image_settings &settings, const std::shared_ptr<std::vector<color>> &image, int max_thread,
             int thread, camera &cam, hittable_list &world, std::atomic<int> &lines_rendered) {
     for (int j = thread; j < settings.image_height; j += max_thread) {
@@ -347,13 +346,31 @@ void worker(struct image_settings &settings, const std::shared_ptr<std::vector<c
     }
 }
 
+void render_tile(const tbb::blocked_range2d<int>& tile_range, struct image_settings &settings, const std::shared_ptr<std::vector<color>> &image,
+                 camera &cam, hittable_list &world, std::atomic<int> &lines_rendered) {
+    for (int j = tile_range.rows().begin(); j != tile_range.rows().end(); ++j) {
+        for (int i = tile_range.cols().begin(); i != tile_range.cols().end(); ++i) {
+            color pixel_color(0, 0, 0);
+            for (int s = 0; s < settings.samples_per_pixel; ++s) {
+                auto u = (i + random_double()) / (settings.image_width - 1);
+                auto v = (j + random_double()) / (settings.image_height - 1);
+                ray r = cam.get_ray(u, v);
+                pixel_color += ray_color(r, settings.background, world, settings.max_depth);
+            }
+            (*image)[j * settings.image_width + i] = pixel_color;
+        }
+        lines_rendered++;
+        double progress = static_cast<double>(lines_rendered) / settings.image_height;
+        print_progress(progress, start_time);
+    }
+}
 
 int main() {
     // Image
 
     const auto aspect_ratio = 16.0 / 10.0;
 
-    const int image_height = 300;
+    const int image_height = 400;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 300;
     const int max_depth = 5;
@@ -376,7 +393,7 @@ int main() {
     auto aperture = 0.0;
     color background(0, 0, 0);
 
-    switch (9) {
+    switch (1) {
 
         case 1:
             world = random_scene();
@@ -452,6 +469,14 @@ int main() {
     camera cam(lookfrom, lookat, vup, vfov, aspect_ratio, aperture, dist_to_focus);
 
     // Render
+
+    int tile_size = 32;
+    tbb::parallel_for(
+            tbb::blocked_range2d<int>(0, image_height, tile_size, 0, image_width, tile_size),
+            [&](const tbb::blocked_range2d<int>& tile_range) {
+                render_tile(tile_range, settings, image, cam, world, lines_rendered);
+            }
+    );
 
     threads.reserve(max_thread);
     for (int i = 0; i < max_thread; ++i) {
