@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef TRACERGEN_MATERIAL_H
 #define TRACERGEN_MATERIAL_H
 

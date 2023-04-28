@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef TRACERGEN_TEXTURE_H
 #define TRACERGEN_TEXTURE_H
 

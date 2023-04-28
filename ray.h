@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef TRACERGEN_RAY_H
 #define TRACERGEN_RAY_H
 
