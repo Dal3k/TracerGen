@@ -273,6 +273,19 @@ hittable_list final_scene() {
     return objects;
 }
 
+hittable_list menger_sponge()
+{
+    hittable_list world;
+
+    auto ground_material = make_shared<lambertian>(color(0.5, 0.5, 0.5));
+    world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, ground_material));
+
+    auto sponge_material = make_shared<lambertian>(color(0.2, 0.3, 0.5));
+    world.add(make_shared<MengerSponge>(point3(0, 1, 0), 1.0, 3, sponge_material));
+
+    return world;
+}
+
 void print_formatted_time(std::ostream& os, int seconds) {
     int hours = seconds / 3600;
     seconds %= 3600;
@@ -337,13 +350,13 @@ void worker(struct image_settings &settings, const std::shared_ptr<std::vector<c
 int main() {
     // Image
 
-    const auto aspect_ratio = 4.0 / 3.0;
+    const auto aspect_ratio = 16.0 / 10.0;
 
-    const int image_height = 500;
+    const int image_height = 200;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
-    const int samples_per_pixel = 400;
-    const int max_depth = 5;
-    const int max_thread = 10;
+    const int samples_per_pixel = 500;
+    const int max_depth = 50;
+    const int max_thread = 6;
 
     std::atomic<int> lines_rendered(0);
 
@@ -362,7 +375,7 @@ int main() {
     auto aperture = 0.0;
     color background(0, 0, 0);
 
-    switch (1) {
+    switch (9) {
 
         case 1:
             world = random_scene();
@@ -413,12 +426,19 @@ int main() {
             lookat = point3(278, 278, 0);
             vfov = 40.0;
             break;
-        default:
         case 8:
             world = final_scene();
             background = color(0, 0, 0);
             lookfrom = point3(478, 278, -600);
             lookat = point3(278, 278, 0);
+            vfov = 40.0;
+            break;
+        default:
+        case 9:
+            world = menger_sponge();
+            settings.background = color(0.70, 0.80, 1.00);
+            lookfrom = point3(13, 2, 3);
+            lookat = point3(0, 0, 0);
             vfov = 40.0;
             break;
     }

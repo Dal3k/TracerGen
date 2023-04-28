@@ -1,6 +1,7 @@
 //
 // Created by Gaëtan Pusel on 28/04/2023.
 //
+#pragma once
 
 #ifndef MENGER_SPONGE_H
 #define MENGER_SPONGE_H
