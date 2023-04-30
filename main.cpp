@@ -463,7 +463,7 @@ int main() {
     camera cam(lookfrom, lookat, vup, vfov, aspect_ratio, aperture, dist_to_focus);
 
     // Set the desired tile size
-    int desired_tile_size = 64;
+    int desired_tile_size = 128;
 
     // Calculate the number of horizontal and vertical tiles
     int num_horizontal_tiles = (image_width + desired_tile_size - 1) / desired_tile_size;
