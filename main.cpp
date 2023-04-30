@@ -23,6 +23,7 @@
 #include "constant_medium.h"
 #include "bvh.h"
 #include "menger_sponge.h"
+#include "tetrahedron.h"
 
 
 struct image_settings {
@@ -285,7 +286,9 @@ hittable_list menger_sponge()
     //world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, ground_material));
 
     auto sponge_material = make_shared<lambertian>(color(0.2, 0.3, 0.5));
-    world.add(make_shared<MengerSponge>(point3(0, 1, 0), 10.0, 3, sponge_material));
+    world.add(make_shared<MengerSponge>(point3(0, 0, 1), 1.0, 4, sponge_material));
+    //world.add(make_shared<tetrahedron>(point3(0, -0.5, 0), 1.0, 2, sponge_material));
+
 
     return world;
 }
@@ -362,11 +365,11 @@ void render_tile(const tbb::blocked_range2d<int>& tile_range, struct image_setti
 int main() {
     // Image
 
-    const auto aspect_ratio = 4.0 / 3.0;
+    const auto aspect_ratio = 1;
 
-    const int image_height = 400;
+    const int image_height = 500;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
-    const int samples_per_pixel = 300;
+    const int samples_per_pixel = 50;
     const int max_depth = 5;
     //const int max_thread = 8;
 
@@ -387,7 +390,7 @@ int main() {
     auto aperture = 0.0;
     color background(0, 0, 0);
 
-    switch (1) {
+    switch (9) {
 
         case 1:
             world = random_scene();
