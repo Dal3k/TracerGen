@@ -23,8 +23,7 @@ public:
     virtual bool bounding_box(double time0, double time1, aabb &output_box) const override;
 
 public:
-    shared_ptr<hittable> left;
-    shared_ptr<hittable> right;
+    std::array<shared_ptr<hittable>, 2> children;
     aabb box;
 };
 
@@ -57,7 +56,15 @@ bvh_node::bvh_node(
 ) {
     auto objects = src_objects; // Create a modifiable array of the source scene objects
 
-    int axis = random_int(0, 2);
+    aabb full_box;
+    for (size_t i = start; i < end; i++) {
+        aabb temp_box;
+        if (!objects[i]->bounding_box(time0, time1, temp_box))
+            std::cerr << "No bounding box in bvh_node constructor.\n";
+        full_box = surrounding_box(full_box, temp_box);
+    }
+
+    int axis = full_box.longest_axis();
     auto comparator = (axis == 0) ? box_x_compare
                                   : (axis == 1) ? box_y_compare
                                                 : box_z_compare;
@@ -65,27 +72,62 @@ bvh_node::bvh_node(
     size_t object_span = end - start;
 
     if (object_span == 1) {
-        left = right = objects[start];
+        children[0] = children[1] = objects[start];
     } else if (object_span == 2) {
-        if (comparator(objects[start], objects[start + 1])) {
-            left = objects[start];
-            right = objects[start + 1];
-        } else {
-            left = objects[start + 1];
-            right = objects[start];
-        }
+        children[0] = objects[start + (comparator(objects[start], objects[start + 1]) ? 0 : 1)];
+        children[1] = objects[start + (comparator(objects[start], objects[start + 1]) ? 1 : 0)];
     } else {
-        std::sort(objects.begin() + start, objects.begin() + end, comparator);
+        // Implement Surface Area Heuristic (SAH) for BVH construction
+        std::vector<aabb> left_boxes(object_span);
+        std::vector<aabb> right_boxes(object_span);
+        aabb left_box, right_box;
 
-        auto mid = start + object_span / 2;
-        left = make_shared<bvh_node>(objects, start, mid, time0, time1);
-        right = make_shared<bvh_node>(objects, mid, end, time0, time1);
+        for (size_t i = start; i < end; i++) {
+            aabb temp_box;
+            if (!objects[i]->bounding_box(time0, time1, temp_box))
+                std::cerr << "No bounding box in bvh_node constructor.\n";
+            left_box = surrounding_box(left_box, temp_box);
+            left_boxes[i - start] = left_box;
+        }
+
+        for (size_t i = end; i > start; i--) {
+            aabb temp_box;
+            if (!objects[i - 1]->bounding_box(time0, time1, temp_box))
+                std::cerr << "No bounding box in bvh_node constructor.\n";
+            right_box = surrounding_box(right_box, temp_box);
+            right_boxes[i - start - 1] = right_box;
+        }
+
+        double min_cost = std::numeric_limits<double>::infinity();
+        size_t split_index = start;
+
+        for (size_t i = start; i < end - 1; i++) {
+            double left_area = left_boxes[i - start].area();
+            double right_area = right_boxes[i - start + 1].area();
+            double cost = (i - start + 1) * left_area + (end - i - 1) * right_area;
+
+            if (cost < min_cost) {
+                min_cost = cost;
+                split_index = i + 1;
+            }
+        }
+
+        children[0] = make_shared<bvh_node>(objects, start, split_index, time0, time1);
+        children[1] = make_shared<bvh_node>(objects, split_index, end, time0, time1);
+
+        // Reorder child nodes for better cache usage during traversal
+        aabb child_box0, child_box1;
+        if (!children[0]->bounding_box(time0, time1, child_box0) || !children[1]->bounding_box(time0, time1, child_box1))
+            std::cerr << "No bounding box in bvh_node constructor.\n";
+
+        if (child_box0.area() > child_box1.area()) {
+            std::swap(children[0], children[1]);
+        }
     }
 
     aabb box_left, box_right;
-
-    if (!left->bounding_box(time0, time1, box_left)
-        || !right->bounding_box(time0, time1, box_right)
+    if (!children[0]->bounding_box(time0, time1, box_left)
+        || !children[1]->bounding_box(time0, time1, box_right)
             )
         std::cerr << "No bounding box in bvh_node constructor.\n";
 
@@ -101,8 +143,8 @@ bool bvh_node::hit(const ray &r, double t_min, double t_max, hit_record &rec) co
     if (!box.hit(r, t_min, t_max))
         return false;
 
-    bool hit_left = left->hit(r, t_min, t_max, rec);
-    bool hit_right = right->hit(r, t_min, hit_left ? rec.t : t_max, rec);
+    bool hit_left = children[0]->hit(r, t_min, t_max, rec);
+    bool hit_right = children[1]->hit(r, t_min, hit_left ? rec.t : t_max, rec);
 
     return hit_left || hit_right;
 }
