@@ -112,8 +112,11 @@ bvh_node::bvh_node(
             }
         }
 
-        children[0] = make_shared<bvh_node>(objects, start, split_index, time0, time1);
-        children[1] = make_shared<bvh_node>(objects, split_index, end, time0, time1);
+        // Use oneTBB's parallel_invoke to construct child nodes in parallel
+        tbb::parallel_invoke(
+            [&] { children[0] = make_shared<bvh_node>(objects, start, split_index, time0, time1); },
+            [&] { children[1] = make_shared<bvh_node>(objects, split_index, end, time0, time1); }
+        );
 
         // Reorder child nodes for better cache usage during traversal
         aabb child_box0, child_box1;

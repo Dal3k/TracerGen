@@ -362,9 +362,9 @@ void render_tile(const tbb::blocked_range2d<int>& tile_range, struct image_setti
 int main() {
     // Image
 
-    const auto aspect_ratio = 16.0 / 10.0;
+    const auto aspect_ratio = 4.0 / 3.0;
 
-    const int image_height = 1080;
+    const int image_height = 400;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 300;
     const int max_depth = 5;
@@ -463,7 +463,7 @@ int main() {
     camera cam(lookfrom, lookat, vup, vfov, aspect_ratio, aperture, dist_to_focus);
 
     // Set the desired tile size
-    int desired_tile_size = 128;
+    int desired_tile_size = 32;
 
     // Calculate the number of horizontal and vertical tiles
     int num_horizontal_tiles = (image_width + desired_tile_size - 1) / desired_tile_size;
