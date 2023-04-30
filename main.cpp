@@ -330,26 +330,10 @@ void print_progress(double progress, const std::chrono::high_resolution_clock::t
 }
 
 
-void worker(struct image_settings &settings, const std::shared_ptr<std::vector<color>> &image, int max_thread,
-            int thread, camera &cam, hittable_list &world, std::atomic<int> &lines_rendered) {
-    for (int j = thread; j < settings.image_height; j += max_thread) {
-        for (int i = 0; i < settings.image_width; ++i) {
-            color pixel_color(0, 0, 0);
-            for (int s = 0; s < settings.samples_per_pixel; ++s) {
-                auto u = (i + random_double()) / (settings.image_width - 1);
-                auto v = (j + random_double()) / (settings.image_height - 1);
-                ray r = cam.get_ray(u, v);
-                pixel_color += ray_color(r, settings.background, world, settings.max_depth);
-            }
-            (*image)[j * settings.image_width + i] = pixel_color;
-        }
-        lines_rendered++;
-        double progress = static_cast<double>(lines_rendered) / settings.image_height;
-        print_progress(progress, start_time, lines_rendered, settings.image_width, settings.image_height);
-    }
-}
+std::mutex progress_mutex;
 
-void render_tile(const tbb::blocked_range2d<int>& tile_range, const image_settings& settings, std::shared_ptr<std::vector<color>> image, const camera& cam, const hittable_list& world, std::atomic<int>& lines_rendered, std::mutex& progress_mutex, int tile_size) {
+void render_tile(const tbb::blocked_range2d<int>& tile_range, struct image_settings &settings, const std::shared_ptr<std::vector<color>> &image,
+                 camera &cam, hittable_list &world, std::atomic<int> &lines_rendered) {
     for (int j = tile_range.rows().begin(); j != tile_range.rows().end(); ++j) {
         for (int i = tile_range.cols().begin(); i != tile_range.cols().end(); ++i) {
             color pixel_color(0, 0, 0);
@@ -478,15 +462,21 @@ int main() {
 
     camera cam(lookfrom, lookat, vup, vfov, aspect_ratio, aperture, dist_to_focus);
 
-    // Render
+    // Set the desired tile size
+    int desired_tile_size = 64;
 
-    int tile_size = 32;
-    std::mutex progress_mutex;
+    // Calculate the number of horizontal and vertical tiles
+    int num_horizontal_tiles = (image_width + desired_tile_size - 1) / desired_tile_size;
+    int num_vertical_tiles = (image_height + desired_tile_size - 1) / desired_tile_size;
+
+    // Calculate the actual tile size based on the number of tiles
+    int actual_tile_width = (image_width + num_horizontal_tiles - 1) / num_horizontal_tiles;
+    int actual_tile_height = (image_height + num_vertical_tiles - 1) / num_vertical_tiles;
 
     tbb::parallel_for(
-            tbb::blocked_range2d<int>(0, image_height, tile_size, 0, image_width, tile_size),
+            tbb::blocked_range2d<int>(0, image_height, actual_tile_height, 0, image_width, actual_tile_width),
             [&](const tbb::blocked_range2d<int>& tile_range) {
-                render_tile(tile_range, settings, image, cam, world, lines_rendered, progress_mutex, tile_size);
+                render_tile(tile_range, settings, image, cam, world, lines_rendered);
             }
     );
 
