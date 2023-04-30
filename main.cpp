@@ -5,6 +5,9 @@
 #include <fstream>
 #include <thread>
 #include <chrono>
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range2d.h>
+#include <tbb/tbb.h>
 
 
 #include "utility.h"
@@ -30,6 +33,7 @@ struct image_settings {
     color background;
 };
 
+auto start_time = std::chrono::high_resolution_clock::now();
 
 color ray_color(const ray &r, const color &background, const hittable &world, int depth) {
     hit_record rec;
@@ -301,7 +305,7 @@ void print_formatted_time(std::ostream& os, int seconds) {
     os << seconds << "s";
 }
 
-void print_progress(double progress, const std::chrono::high_resolution_clock::time_point &start_time) {
+void print_progress(double progress, const std::chrono::high_resolution_clock::time_point &start_time, int total_pixels, int image_width, int image_height) {
     int bar_width = 50;
 
     auto current_time = std::chrono::high_resolution_clock::now();
@@ -316,6 +320,7 @@ void print_progress(double progress, const std::chrono::high_resolution_clock::t
         else std::cout << " ";
     }
     std::cout << "] " << static_cast<int>(progress * 100.0) << " %"
+              << " (" << total_pixels << " of " << image_height * image_width << " pixels)"
               << " Elapsed: ";
     print_formatted_time(std::cout, static_cast<int>(elapsed_time));
     std::cout << " Remaining: ";
@@ -325,12 +330,12 @@ void print_progress(double progress, const std::chrono::high_resolution_clock::t
 }
 
 
-auto start_time = std::chrono::high_resolution_clock::now();
+std::mutex progress_mutex;
 
-void worker(struct image_settings &settings, const std::shared_ptr<std::vector<color>> &image, int max_thread,
-            int thread, camera &cam, hittable_list &world, std::atomic<int> &lines_rendered) {
-    for (int j = thread; j < settings.image_height; j += max_thread) {
-        for (int i = 0; i < settings.image_width; ++i) {
+void render_tile(const tbb::blocked_range2d<int>& tile_range, struct image_settings &settings, const std::shared_ptr<std::vector<color>> &image,
+                 camera &cam, hittable_list &world, std::atomic<int> &lines_rendered) {
+    for (int j = tile_range.rows().begin(); j != tile_range.rows().end(); ++j) {
+        for (int i = tile_range.cols().begin(); i != tile_range.cols().end(); ++i) {
             color pixel_color(0, 0, 0);
             for (int s = 0; s < settings.samples_per_pixel; ++s) {
                 auto u = (i + random_double()) / (settings.image_width - 1);
@@ -340,11 +345,18 @@ void worker(struct image_settings &settings, const std::shared_ptr<std::vector<c
             }
             (*image)[j * settings.image_width + i] = pixel_color;
         }
-        lines_rendered++;
-        double progress = static_cast<double>(lines_rendered) / settings.image_height;
-        print_progress(progress, start_time);
+    }
+
+    int pixels_rendered_in_tile = (tile_range.rows().end() - tile_range.rows().begin()) * (tile_range.cols().end() - tile_range.cols().begin());
+
+    {
+        std::lock_guard<std::mutex> lock(progress_mutex);
+        lines_rendered += pixels_rendered_in_tile;
+        double progress = static_cast<double>(lines_rendered) / (settings.image_height * settings.image_width);
+        print_progress(progress, start_time, lines_rendered, settings.image_width, settings.image_height);
     }
 }
+
 
 
 int main() {
@@ -352,11 +364,11 @@ int main() {
 
     const auto aspect_ratio = 16.0 / 10.0;
 
-    const int image_height = 300;
+    const int image_height = 1080;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 300;
     const int max_depth = 5;
-    const int max_thread = 8;
+    //const int max_thread = 8;
 
     std::atomic<int> lines_rendered(0);
 
@@ -375,7 +387,7 @@ int main() {
     auto aperture = 0.0;
     color background(0, 0, 0);
 
-    switch (9) {
+    switch (1) {
 
         case 1:
             world = random_scene();
@@ -450,17 +462,24 @@ int main() {
 
     camera cam(lookfrom, lookat, vup, vfov, aspect_ratio, aperture, dist_to_focus);
 
-    // Render
+    // Set the desired tile size
+    int desired_tile_size = 128;
 
-    threads.reserve(max_thread);
-    for (int i = 0; i < max_thread; ++i) {
-        threads.emplace_back(worker, std::ref(settings), std::ref(image), max_thread, i, std::ref(cam),
-                             std::ref(world), std::ref(lines_rendered));
-    }
+    // Calculate the number of horizontal and vertical tiles
+    int num_horizontal_tiles = (image_width + desired_tile_size - 1) / desired_tile_size;
+    int num_vertical_tiles = (image_height + desired_tile_size - 1) / desired_tile_size;
 
-    for (auto &thread: threads) {
-        thread.join();
-    }
+    // Calculate the actual tile size based on the number of tiles
+    int actual_tile_width = (image_width + num_horizontal_tiles - 1) / num_horizontal_tiles;
+    int actual_tile_height = (image_height + num_vertical_tiles - 1) / num_vertical_tiles;
+
+    tbb::parallel_for(
+            tbb::blocked_range2d<int>(0, image_height, actual_tile_height, 0, image_width, actual_tile_width),
+            [&](const tbb::blocked_range2d<int>& tile_range) {
+                render_tile(tile_range, settings, image, cam, world, lines_rendered);
+            }
+    );
+
 
     std::vector<unsigned char> image_data(image_width * image_height * 3);
 
