@@ -7,6 +7,8 @@
 #include <chrono>
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range2d.h>
+#include <tbb/tbb.h>
+
 
 #include "utility.h"
 
@@ -303,7 +305,7 @@ void print_formatted_time(std::ostream& os, int seconds) {
     os << seconds << "s";
 }
 
-void print_progress(double progress, const std::chrono::high_resolution_clock::time_point &start_time) {
+void print_progress(double progress, const std::chrono::high_resolution_clock::time_point &start_time, int total_pixels, int image_width, int image_height) {
     int bar_width = 50;
 
     auto current_time = std::chrono::high_resolution_clock::now();
@@ -318,6 +320,7 @@ void print_progress(double progress, const std::chrono::high_resolution_clock::t
         else std::cout << " ";
     }
     std::cout << "] " << static_cast<int>(progress * 100.0) << " %"
+              << " (" << total_pixels << " of " << image_height * image_width << " pixels)"
               << " Elapsed: ";
     print_formatted_time(std::cout, static_cast<int>(elapsed_time));
     std::cout << " Remaining: ";
@@ -342,12 +345,11 @@ void worker(struct image_settings &settings, const std::shared_ptr<std::vector<c
         }
         lines_rendered++;
         double progress = static_cast<double>(lines_rendered) / settings.image_height;
-        print_progress(progress, start_time);
+        print_progress(progress, start_time, lines_rendered, settings.image_width, settings.image_height);
     }
 }
 
-void render_tile(const tbb::blocked_range2d<int>& tile_range, struct image_settings &settings, const std::shared_ptr<std::vector<color>> &image,
-                 camera &cam, hittable_list &world, std::atomic<int> &lines_rendered) {
+void render_tile(const tbb::blocked_range2d<int>& tile_range, const image_settings& settings, std::shared_ptr<std::vector<color>> image, const camera& cam, const hittable_list& world, std::atomic<int>& lines_rendered, std::mutex& progress_mutex, int tile_size) {
     for (int j = tile_range.rows().begin(); j != tile_range.rows().end(); ++j) {
         for (int i = tile_range.cols().begin(); i != tile_range.cols().end(); ++i) {
             color pixel_color(0, 0, 0);
@@ -359,22 +361,30 @@ void render_tile(const tbb::blocked_range2d<int>& tile_range, struct image_setti
             }
             (*image)[j * settings.image_width + i] = pixel_color;
         }
-        lines_rendered++;
-        double progress = static_cast<double>(lines_rendered) / settings.image_height;
-        print_progress(progress, start_time);
+    }
+
+    int pixels_rendered_in_tile = (tile_range.rows().end() - tile_range.rows().begin()) * (tile_range.cols().end() - tile_range.cols().begin());
+
+    {
+        std::lock_guard<std::mutex> lock(progress_mutex);
+        lines_rendered += pixels_rendered_in_tile;
+        double progress = static_cast<double>(lines_rendered) / (settings.image_height * settings.image_width);
+        print_progress(progress, start_time, lines_rendered, settings.image_width, settings.image_height);
     }
 }
+
+
 
 int main() {
     // Image
 
     const auto aspect_ratio = 16.0 / 10.0;
 
-    const int image_height = 400;
+    const int image_height = 1080;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 300;
     const int max_depth = 5;
-    const int max_thread = 8;
+    //const int max_thread = 8;
 
     std::atomic<int> lines_rendered(0);
 
@@ -471,22 +481,15 @@ int main() {
     // Render
 
     int tile_size = 32;
+    std::mutex progress_mutex;
+
     tbb::parallel_for(
             tbb::blocked_range2d<int>(0, image_height, tile_size, 0, image_width, tile_size),
             [&](const tbb::blocked_range2d<int>& tile_range) {
-                render_tile(tile_range, settings, image, cam, world, lines_rendered);
+                render_tile(tile_range, settings, image, cam, world, lines_rendered, progress_mutex, tile_size);
             }
     );
 
-    threads.reserve(max_thread);
-    for (int i = 0; i < max_thread; ++i) {
-        threads.emplace_back(worker, std::ref(settings), std::ref(image), max_thread, i, std::ref(cam),
-                             std::ref(world), std::ref(lines_rendered));
-    }
-
-    for (auto &thread: threads) {
-        thread.join();
-    }
 
     std::vector<unsigned char> image_data(image_width * image_height * 3);
 
