@@ -33,6 +33,25 @@ public:
 
     point3 minimum;
     point3 maximum;
+
+    int longest_axis() const {
+        vec3 extents = max() - min();
+        if (extents.x() >= extents.y() && extents.x() >= extents.z()) {
+            return 0;
+        } else if (extents.y() >= extents.x() && extents.y() >= extents.z()) {
+            return 1;
+        } else {
+            return 2;
+        }
+    }
+
+    double area() const {
+        auto a = max().x() - min().x();
+        auto b = max().y() - min().y();
+        auto c = max().z() - min().z();
+        return 2 * (a * b + b * c + c * a);
+    }
+
 };
 
 inline aabb surrounding_box(aabb box0, aabb box1) {
