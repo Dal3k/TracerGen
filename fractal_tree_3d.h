@@ -81,6 +81,19 @@ hittable_list FractalTree3D::create_tree(const std::string& commands, double len
             case '-':
                 directions.back() = rotate(directions.back(), -M_PI / 6, vec3(1, 0, 0));
                 break;
+            case '&':
+                directions.back() = rotate(directions.back(), M_PI / 6, vec3(0, 1, 0));
+                break;
+            case '^':
+                directions.back() = rotate(directions.back(), -M_PI / 6, vec3(0, 1, 0));
+                break;
+            case '\\':
+                directions.back() = rotate(directions.back(), M_PI / 6, vec3(0, 0, 1));
+                break;
+            case '/':
+                directions.back() = rotate(directions.back(), -M_PI / 6, vec3(0, 0, 1));
+                break;
+
             case 'X':
                 break;
             default:
@@ -99,7 +112,7 @@ std::string FractalTree3D::generate_l_system(int iterations, const std::string& 
 
         for (char command : l_system) {
             if (command == 'X') {
-                new_system += "F[+X][-X]";
+                new_system += "F[&+X]^[-\\X]/[+^X]-[\\/&X]FX";
             } else {
                 new_system += command;
             }
@@ -110,5 +123,6 @@ std::string FractalTree3D::generate_l_system(int iterations, const std::string& 
 
     return l_system;
 }
+
 
 #endif //TRACERGEN_FRACTAL_TREE_3D_H

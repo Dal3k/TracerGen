@@ -334,7 +334,7 @@ hittable_list create_forest() {
         for (int j = 0; j < num_trees; ++j) {
             double initial_length = random_double(4.0, 6.0);
             double initial_radius = initial_length / 20.0;
-            int iterations = 4;
+            int iterations = random_int(2, 4);
 
             point3 root(i * spacing, 0, j * spacing);
             forest.add(make_shared<FractalTree3D>(root, initial_length, initial_radius, iterations, tree_material));
