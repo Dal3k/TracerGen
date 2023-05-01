@@ -123,11 +123,11 @@ void render_tile(const tbb::blocked_range2d<int>& tile_range, struct image_setti
 int main() {
     // Image
 
-    const auto aspect_ratio = 0.5;
+    const auto aspect_ratio = 4.0 / 3.0;
 
-    const int image_height = 2000;
+    const int image_height = 500;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
-    const int samples_per_pixel = 50;
+    const int samples_per_pixel = 30;
     const int max_depth = 5;
     //const int max_thread = 8;
 
@@ -148,7 +148,7 @@ int main() {
     auto aperture = 0.0;
     color background(0, 0, 0);
 
-    switch (13) {
+    switch (14) {
 
         case 1:
             world = random_scene();
@@ -239,6 +239,13 @@ int main() {
             world = sierpinski();
             settings.background = color(0.70, 0.80, 1.00);
             lookfrom = point3(0, 0, 15);
+            lookat = point3(0, 0, 0);
+            vfov = 20.0;
+            break;
+        case 14:
+            world = fractal_noise_scene();
+            settings.background = color(0.70, 0.80, 1.00);
+            lookfrom = point3(0, 0, 260);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
             break;

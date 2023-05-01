@@ -23,6 +23,7 @@
 #include "cylinder.h"
 #include "barnsley_fern.h"
 #include "sierpinski_tetrahedron.h"
+#include "fractal_noise_texture.h"
 
 hittable_list random_scene() {
     hittable_list world;
@@ -330,6 +331,18 @@ hittable_list sierpinski() {
 
     return objects;
 }
+
+hittable_list fractal_noise_scene() {
+    hittable_list objects;
+
+    auto fractal_noise_tex = make_shared<fractal_noise_texture>(1.0, 6, 0.5);
+    auto fractal_noise_mat = make_shared<lambertian>(fractal_noise_tex);
+
+    objects.add(make_shared<sphere>(point3(0, 0, 0), 100, fractal_noise_mat));
+
+    return objects;
+}
+
 
 
 #endif //TRACERGEN_SCENES_H
