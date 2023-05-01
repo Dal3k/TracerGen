@@ -24,7 +24,8 @@
 #include "bvh.h"
 #include "menger_sponge.h"
 #include "tetrahedron.h"
-
+#include "fractal_tree_3d.h"
+#include "cylinder.h"
 
 struct image_settings {
     int image_height;
@@ -293,6 +294,59 @@ hittable_list menger_sponge()
     return world;
 }
 
+hittable_list create_fractal_tree_scene() {
+    hittable_list objects;
+
+    auto material1 = make_shared<lambertian>(color(0.2, 0.8, 0.2));
+
+    // First tree configuration
+    double initial_length1 = 1.0;
+    double initial_radius1 = 0.1;
+    int depth1 = 4;
+    FractalTree3D tree1(point3(0, 0, 0), initial_length1, initial_radius1, depth1, material1);
+    objects.add(make_shared<FractalTree3D>(tree1));
+
+    // Second tree configuration
+    double initial_length2 = 1.5;
+    double initial_radius2 = 0.15;
+    int depth2 = 5;
+    FractalTree3D tree2(point3(5, 0, 0), initial_length2, initial_radius2, depth2, material1);
+    objects.add(make_shared<FractalTree3D>(tree2));
+
+    // Third tree configuration
+    double initial_length3 = 2.0;
+    double initial_radius3 = 0.2;
+    int depth3 = 3;
+    FractalTree3D tree3(point3(-5, 0, 0), initial_length3, initial_radius3, depth3, material1);
+    objects.add(make_shared<FractalTree3D>(tree3));
+
+    return objects;
+}
+
+hittable_list create_forest() {
+    hittable_list forest;
+    auto tree_material = make_shared<lambertian>(color(0.4, 0.2, 0.1));
+
+    int num_trees = 20;
+    double spacing = 10.0;
+
+    for (int i = 0; i < num_trees; ++i) {
+        for (int j = 0; j < num_trees; ++j) {
+            double initial_length = random_double(4.0, 6.0);
+            double initial_radius = initial_length / 20.0;
+            int iterations = 4;
+
+            point3 root(i * spacing, 0, j * spacing);
+            forest.add(make_shared<FractalTree3D>(root, initial_length, initial_radius, iterations, tree_material));
+        }
+    }
+
+    return forest;
+}
+
+
+
+
 void print_formatted_time(std::ostream& os, int seconds) {
     int hours = seconds / 3600;
     seconds %= 3600;
@@ -365,11 +419,11 @@ void render_tile(const tbb::blocked_range2d<int>& tile_range, struct image_setti
 int main() {
     // Image
 
-    const auto aspect_ratio = 1;
+    const auto aspect_ratio = 16.0 / 9.0;
 
-    const int image_height = 500;
+    const int image_height = 300;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
-    const int samples_per_pixel = 50;
+    const int samples_per_pixel = 20;
     const int max_depth = 5;
     //const int max_thread = 8;
 
@@ -390,7 +444,7 @@ int main() {
     auto aperture = 0.0;
     color background(0, 0, 0);
 
-    switch (9) {
+    switch (11) {
 
         case 1:
             world = random_scene();
@@ -456,6 +510,21 @@ int main() {
             lookat = point3(0, 0, 0);
             vfov = 40.0;
             break;
+        case 10:
+            world = create_fractal_tree_scene();
+            settings.background = color(0.70, 0.80, 1.00);
+            lookfrom = point3(3, 3, 10); // Position the camera at a slightly elevated angle and some distance away
+            lookat = point3(0, 1, 0);    // Aim the camera at the base of the first tree
+            vfov = 40.0;
+            break;
+        case 11:
+            world = create_forest();
+            settings.background = color(0.70, 0.80, 1.00);
+            lookfrom = point3(100, 50, 100); // Position the camera at a slightly elevated angle and some distance away
+            lookat = point3(100, 5, 50);    // Aim the camera at the base of the first tree
+            vfov = 40.0;
+            break;
+
     }
 
     // Camera

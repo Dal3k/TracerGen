@@ -61,6 +61,10 @@ public:
         return (fabs(e[0]) < s) && (fabs(e[1]) < s) && (fabs(e[2]) < s);
     }
 
+    double luminance() const {
+        return 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2];
+    }
+
 public:
     double e[3];
 };
