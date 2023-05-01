@@ -26,6 +26,7 @@
 #include "tetrahedron.h"
 #include "fractal_tree_3d.h"
 #include "cylinder.h"
+#include "barnsley_fern.h"
 
 struct image_settings {
     int image_height;
@@ -344,6 +345,14 @@ hittable_list create_forest() {
     return forest;
 }
 
+hittable_list create_ferne() {
+    hittable_list world;
+    auto fern_material = make_shared<lambertian>(color(0.1, 0.8, 0.1));
+    auto fern = make_shared<BarnsleyFern>(50000, 10, fern_material);
+    world.add(fern);
+    return world;
+}
+
 
 
 
@@ -419,11 +428,11 @@ void render_tile(const tbb::blocked_range2d<int>& tile_range, struct image_setti
 int main() {
     // Image
 
-    const auto aspect_ratio = 16.0 / 9.0;
+    const auto aspect_ratio = 0.5;
 
-    const int image_height = 300;
+    const int image_height = 1000;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
-    const int samples_per_pixel = 20;
+    const int samples_per_pixel = 30;
     const int max_depth = 5;
     //const int max_thread = 8;
 
@@ -444,7 +453,7 @@ int main() {
     auto aperture = 0.0;
     color background(0, 0, 0);
 
-    switch (11) {
+    switch (12) {
 
         case 1:
             world = random_scene();
@@ -522,6 +531,13 @@ int main() {
             settings.background = color(0.70, 0.80, 1.00);
             lookfrom = point3(100, 50, 100); // Position the camera at a slightly elevated angle and some distance away
             lookat = point3(100, 5, 50);    // Aim the camera at the base of the first tree
+            vfov = 40.0;
+            break;
+        case 12:
+            world = create_ferne();
+            settings.background = color(0.70, 0.80, 1.00);
+            lookfrom = point3(0, 100, 150); // Position the camera at a slightly elevated angle and some distance away
+            lookat = point3(0, 50, 0);    // Aim the camera at the base of the first tree
             vfov = 40.0;
             break;
 
