@@ -123,9 +123,9 @@ void render_tile(const tbb::blocked_range2d<int>& tile_range, struct image_setti
 int main() {
     // Image
 
-    const auto aspect_ratio = 16.0 / 9.0;
+    const auto aspect_ratio = 4.0 / 3.0;
 
-    const int image_height = 5000;
+    const int image_height = 3000;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 50;
     const int max_depth = 5;
@@ -250,7 +250,7 @@ int main() {
             vfov = 20.0;
             break;
         case 15:
-            world = (warped_scene());
+            world = (procedural_warped_scene_color());
             settings.background = color(0.70, 0.80, 1.00);
             lookfrom = point3(0, 0, 110);
             lookat = point3(0, 0, 0);
