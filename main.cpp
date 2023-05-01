@@ -430,7 +430,7 @@ int main() {
 
     const auto aspect_ratio = 0.5;
 
-    const int image_height = 1000;
+    const int image_height = 3000;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 30;
     const int max_depth = 5;
