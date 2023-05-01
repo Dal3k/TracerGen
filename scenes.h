@@ -25,6 +25,8 @@
 #include "sierpinski_tetrahedron.h"
 #include "fractal_noise_texture.h"
 #include "worley_noise_texture.h"
+#include "reaction_diffusion_texture.h"
+#include "reaction_diffusion_texture_color.h"
 
 hittable_list random_scene() {
     hittable_list world;
@@ -341,6 +343,30 @@ hittable_list fractal_noise_scene() {
     world.add(make_shared<sphere>(point3(0, -100.5, -1), 100, make_shared<lambertian>(worley_noise_texture_ptr)));
     return world;
 }
+
+hittable_list reaction_diffusion_scene() {
+    hittable_list objects;
+
+    auto reaction_diffusion_tex = make_shared<reaction_diffusion_texture>(2.0);
+    auto reaction_diffusion_mat = make_shared<lambertian>(reaction_diffusion_tex);
+
+    objects.add(make_shared<sphere>(point3(0, 0, 0), 50, reaction_diffusion_mat));
+
+    return objects;
+}
+
+hittable_list reaction_diffusion_color_scene() {
+    hittable_list objects;
+
+    auto rd_texture = make_shared<reaction_diffusion_texture_color>(5.0, color(0.2, 0.3, 0.6), color(0.8, 0.6, 0.2));
+    auto rd_material = make_shared<lambertian>(rd_texture);
+
+    objects.add(make_shared<sphere>(point3(0, 0, 0), 100, rd_material));
+
+    return objects;
+}
+
+
 
 
 
