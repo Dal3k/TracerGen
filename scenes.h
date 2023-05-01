@@ -318,5 +318,18 @@ hittable_list create_ferne() {
     return world;
 }
 
+hittable_list sierpinski() {
+    hittable_list objects;
+
+    auto mat = make_shared<lambertian>(color(0.5, 0.5, 0.5));
+    int depth = 6;
+    point3 center(0, 0, 0);
+    double side_length = 6.0;
+
+    objects = SierpinskiTetrahedron::create(depth, center, side_length, mat);
+
+    return objects;
+}
+
 
 #endif //TRACERGEN_SCENES_H
