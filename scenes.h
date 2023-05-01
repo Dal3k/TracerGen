@@ -24,6 +24,7 @@
 #include "barnsley_fern.h"
 #include "sierpinski_tetrahedron.h"
 #include "fractal_noise_texture.h"
+#include "worley_noise_texture.h"
 
 hittable_list random_scene() {
     hittable_list world;
@@ -333,14 +334,12 @@ hittable_list sierpinski() {
 }
 
 hittable_list fractal_noise_scene() {
-    hittable_list objects;
+    hittable_list world;
 
-    auto fractal_noise_tex = make_shared<fractal_noise_texture>(1.0, 6, 0.5);
-    auto fractal_noise_mat = make_shared<lambertian>(fractal_noise_tex);
-
-    objects.add(make_shared<sphere>(point3(0, 0, 0), 100, fractal_noise_mat));
-
-    return objects;
+    auto worley_noise_texture_ptr = make_shared<worley_noise_texture>(5.0);
+    world.add(make_shared<sphere>(point3(0, 0, -1), 0.5, make_shared<lambertian>(worley_noise_texture_ptr)));
+    world.add(make_shared<sphere>(point3(0, -100.5, -1), 100, make_shared<lambertian>(worley_noise_texture_ptr)));
+    return world;
 }
 
 
