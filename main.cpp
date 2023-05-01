@@ -125,7 +125,7 @@ int main() {
 
     const auto aspect_ratio = 16.0 / 9.0;
 
-    const int image_height = 1000;
+    const int image_height = 5000;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 50;
     const int max_depth = 5;
@@ -148,7 +148,7 @@ int main() {
     auto aperture = 0.0;
     color background(0, 0, 0);
 
-    switch (14) {
+    switch (15) {
 
         case 1:
             world = random_scene();
@@ -243,9 +243,16 @@ int main() {
             vfov = 20.0;
             break;
         case 14:
-            world = reaction_diffusion_color_scene();
+            world = turbulence_scene();
             settings.background = color(0.70, 0.80, 1.00);
-            lookfrom = point3(0, 2, 255);
+            lookfrom = point3(0, 0, 110);
+            lookat = point3(0, 0, 0);
+            vfov = 20.0;
+            break;
+        case 15:
+            world = (warped_scene());
+            settings.background = color(0.70, 0.80, 1.00);
+            lookfrom = point3(0, 0, 110);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
             break;

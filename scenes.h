@@ -27,6 +27,8 @@
 #include "worley_noise_texture.h"
 #include "reaction_diffusion_texture.h"
 #include "reaction_diffusion_texture_color.h"
+#include "turbulence_texture.h"
+#include "warped_texture.h"
 
 hittable_list random_scene() {
     hittable_list world;
@@ -365,6 +367,29 @@ hittable_list reaction_diffusion_color_scene() {
 
     return objects;
 }
+
+hittable_list turbulence_scene() {
+    hittable_list objects;
+
+    auto turbulence_tex = make_shared<turbulence_texture>(1.0, color(0.2, 0.3, 0.1), color(0.9, 0.9, 0.9));
+    auto turbulence_mat = make_shared<lambertian>(turbulence_tex);
+
+    objects.add(make_shared<sphere>(point3(0, 0, 0), 100, turbulence_mat));
+
+    return objects;
+}
+
+hittable_list warped_scene() {
+    hittable_list objects;
+
+    auto warped_tex = make_shared<warped_texture>(1.0);
+    auto warped_mat = make_shared<lambertian>(warped_tex);
+
+    objects.add(make_shared<sphere>(point3(0, 0, 0), 100, warped_mat));
+
+    return objects;
+}
+
 
 
 
