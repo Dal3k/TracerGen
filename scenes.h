@@ -31,6 +31,7 @@
 #include "warped_texture.h"
 #include "randomized_warped_texture.h"
 #include "procedural_warped_texture.h"
+#include "full_procedural_warped_texture.h"
 
 hittable_list random_scene() {
     hittable_list world;
@@ -413,6 +414,18 @@ hittable_list procedural_warped_scene_color() {
 
     return objects;
 }
+
+hittable_list full_procedural_warped_scene() {
+    hittable_list objects;
+
+    auto procedural_warped_tex = make_shared<full_procedural_warped_texture>();
+    auto procedural_warped_mat = make_shared<lambertian>(procedural_warped_tex);
+
+    objects.add(make_shared<sphere>(point3(0, 0, 0), 100, procedural_warped_mat));
+
+    return objects;
+}
+
 
 
 
