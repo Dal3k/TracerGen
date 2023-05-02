@@ -16,12 +16,12 @@ public:
         vec3 scale_vec(scale, scale, scale);
         point3 warped_p = p + scale_vec * fbm(scale_vec * (p + scale_vec * fbm(scale_vec * (p + scale_vec * fbm(scale_vec * p)))));
 
-        double warped_value = 0.5 * (1 + sin(2 * M_PI * warped_p.z()));
-        //double warped_value = 0.5 * (1 + sin(warped_p.z()));
+        //double warped_value = 0.5 * (1 + sin(2 * M_PI * warped_p.z()));
+        double warped_value = 0.5 * (1 + sin(warped_p.z()));
         color col = color(fabs(sin(warped_p.x())), fabs(sin(warped_p.y())), fabs(sin(warped_p.z())));
 
-        //return lerp(col, color(warped_value, warped_value, warped_value), warped_value);
-        return lerp(col, color(warped_value, warped_value, warped_value), pow(warped_value, 2));
+        return lerp(col, color(warped_value, warped_value, warped_value), warped_value);
+        //return lerp(col, color(warped_value, warped_value, warped_value), pow(warped_value, 2));
     }
 
 private:

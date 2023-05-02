@@ -125,7 +125,7 @@ int main() {
 
     const auto aspect_ratio = 4.0 / 3.0;
 
-    const int image_height = 20000;
+    const int image_height = 30;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 1;
     const int max_depth = 5;
@@ -148,7 +148,7 @@ int main() {
     auto aperture = 0.0;
     color background(0, 0, 0);
 
-    switch (16) {
+    switch (15) {
 
         case 1:
             world = random_scene();

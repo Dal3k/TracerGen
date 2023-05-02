@@ -39,6 +39,13 @@ public:
     }
 
     virtual color value(double u, double v, const point3 &p) const override {
+        double worley_value = worley_noise(p);
+        std::cout << "Worley value: " << worley_value << std::endl;
+
+        color col = color(worley_value, worley_value, worley_value);
+        std::cout << "Color: " << col.x() << " " << col.y() << " " << col.z() << std::endl;
+        return col;
+        /**
         point3 warped_p = p;
         double q = 0.0;
         double r = 0.0;
@@ -58,6 +65,7 @@ public:
         // Step 4: Create the final texture with colors based on q and r
         double warped_value = 0.5 * (1 + sin(2 * M_PI * warped_p.z()));
         return color(warped_value * q, warped_value * r, warped_value);
+         **/
     }
 
 
@@ -78,21 +86,36 @@ private:
         return perlin_noise_gen.noise(p);
     }
 
+    vec3 hash(const vec3 &v) const {
+        double x = sin(v.x() * 127.1 + v.y() * 311.7 + v.z() * 419.3) * 43758.5453;
+        double y = sin(v.x() * 269.5 + v.y() * 183.3 + v.z() * 372.9) * 43758.5453;
+        double z = sin(v.x() * 419.7 + v.y() * 371.9 + v.z() * 139.1) * 43758.5453;
+
+        double fractional_x = x - floor(x);
+        double fractional_y = y - floor(y);
+        double fractional_z = z - floor(z);
+
+        return vec3(fractional_x, fractional_y, fractional_z);
+    }
+
     double worley_noise(const point3 &p) const {
         double min_distance = std::numeric_limits<double>::max();
         for (int i = -1; i <= 1; ++i) {
             for (int j = -1; j <= 1; ++j) {
                 for (int k = -1; k <= 1; ++k) {
-                    vec3 random_offset = vec3(random_double(), random_double(), random_double());
-                    vec3 cell_center = vec3(i, j, k) + random_offset;
+                    vec3 cell_index = vec3(i, j, k);
+                    vec3 random_offset = hash(cell_index);
+                    vec3 cell_center = cell_index + random_offset;
                     vec3 cell_offset = p - cell_center;
-                    double distance = cell_offset.length();
+                    double distance = cell_offset.length_squared(); // Use squared distance to avoid the sqrt operation
                     min_distance = std::min(min_distance, distance);
                 }
             }
         }
-        return min_distance;
+        return sqrt(min_distance); // Return the square root of the minimum squared distance
     }
+
+
 
     double apply_noise_function(const point3 &p, NoiseFunction noise_function) const {
         switch (noise_function) {
