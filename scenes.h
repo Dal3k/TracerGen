@@ -407,7 +407,7 @@ hittable_list random_warped_scene_color() {
 hittable_list procedural_warped_scene_color() {
     hittable_list objects;
 
-    auto warped_tex = make_shared<procedural_warped_texture>(1.5);
+    auto warped_tex = make_shared<procedural_warped_texture>(1.2);
     auto warped_mat = make_shared<lambertian>(warped_tex);
 
     objects.add(make_shared<sphere>(point3(0, 0, 0), 100, warped_mat));

@@ -125,9 +125,9 @@ int main() {
 
     const auto aspect_ratio = 4.0 / 3.0;
 
-    const int image_height = 300;
+    const int image_height = 20000;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
-    const int samples_per_pixel = 30;
+    const int samples_per_pixel = 1;
     const int max_depth = 5;
     //const int max_thread = 8;
 
@@ -148,7 +148,7 @@ int main() {
     auto aperture = 0.0;
     color background(0, 0, 0);
 
-    switch (15) {
+    switch (16) {
 
         case 1:
             world = random_scene();
@@ -251,6 +251,13 @@ int main() {
             break;
         case 15:
             world = (full_procedural_warped_scene());
+            settings.background = color(0.70, 0.80, 1.00);
+            lookfrom = point3(0, 0, 110);
+            lookat = point3(0, 0, 0);
+            vfov = 20.0;
+            break;
+        case 16:
+            world = procedural_warped_scene_color();
             settings.background = color(0.70, 0.80, 1.00);
             lookfrom = point3(0, 0, 110);
             lookat = point3(0, 0, 0);
