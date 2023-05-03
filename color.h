@@ -16,6 +16,9 @@ void write_color(std::vector<unsigned char> &image_data, int index, color pixel_
     g = sqrt(scale * g);
     b = sqrt(scale * b);
 
+    std::cout << "Color values before clamping: " << r << " " << g << " " << b << std::endl;
+
+
     // Write the translated [0,255] value of each color component.
     image_data[index * 3 + 0] = static_cast<int>(256 * clamp(r, 0.0, 0.999));
     image_data[index * 3 + 1] = static_cast<int>(256 * clamp(g, 0.0, 0.999));

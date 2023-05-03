@@ -127,7 +127,7 @@ int main() {
 
     const int image_height = 1000;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
-    const int samples_per_pixel = 10;
+    const int samples_per_pixel = 1;
     const int max_depth = 5;
     //const int max_thread = 8;
 
