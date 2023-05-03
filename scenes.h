@@ -32,6 +32,8 @@
 #include "randomized_warped_texture.h"
 #include "procedural_warped_texture.h"
 #include "full_procedural_warped_texture.h"
+#include "worley.h"
+#include "worler_texture.h"
 
 hittable_list random_scene() {
     hittable_list world;
@@ -426,6 +428,16 @@ hittable_list full_procedural_warped_scene() {
     return objects;
 }
 
+hittable_list worley_noise_scene() {
+    hittable_list objects;
+
+    auto worley_tex = make_shared<worley_texture>(100.0, 42); // Feel free to adjust the cell_size and seed
+    auto worley_mat = make_shared<lambertian>(worley_tex);
+
+    objects.add(make_shared<sphere>(point3(0, 0, 0), 100, worley_mat));
+
+    return objects;
+}
 
 
 

@@ -125,9 +125,9 @@ int main() {
 
     const auto aspect_ratio = 4.0 / 3.0;
 
-    const int image_height = 20000;
+    const int image_height = 1000;
     const int image_width = static_cast<int>(image_height * aspect_ratio);
-    const int samples_per_pixel = 1;
+    const int samples_per_pixel = 10;
     const int max_depth = 5;
     //const int max_thread = 8;
 
@@ -257,6 +257,13 @@ int main() {
             vfov = 20.0;
             break;
         case 16:
+            world = worley_noise_scene();
+            settings.background = color(0.70, 0.80, 1.00);
+            lookfrom = point3(0, 0, 110);
+            lookat = point3(0, 0, 0);
+            vfov = 20.0;
+            break;
+        case 17:
             world = procedural_warped_scene_color();
             settings.background = color(0.70, 0.80, 1.00);
             lookfrom = point3(0, 0, 110);
