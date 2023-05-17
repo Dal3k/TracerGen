@@ -1,26 +1,23 @@
 #ifndef TRACERGEN_BLACKHOLE_H
 #define TRACERGEN_BLACKHOLE_H
 
-#include "hittable.h"
 
 class Blackhole : public hittable {
 public:
     Blackhole() {}
 
-    Blackhole(point3 cen, double m) : center(cen), mass(m) {}
+    Blackhole(point3 cen, double r) : center(cen), radius(r) {}
 
     virtual bool hit(const ray& r, double tmin, double tmax, hit_record& rec) const override {
-        // Use a sphere's hit detection logic for simplicity
         vec3 oc = r.origin() - center;
         auto a = r.direction().length_squared();
         auto half_b = dot(oc, r.direction());
-        auto c = oc.length_squared() - mass*mass;
+        auto c = oc.length_squared() - radius*radius;
 
         auto discriminant = half_b*half_b - a*c;
         if (discriminant < 0) return false;
         auto sqrtd = sqrt(discriminant);
 
-        // Find the nearest root that lies in the acceptable range.
         auto root = (-half_b - sqrtd) / a;
         if (root < tmin || tmax < root) {
             root = (-half_b + sqrtd) / a;
@@ -30,10 +27,14 @@ public:
 
         rec.t = root;
         rec.p = r.at(rec.t);
-        vec3 outward_normal = (rec.p - center) / mass;
-        rec.set_face_normal(r, outward_normal);
 
         return true;
+    }
+
+    virtual ray interact(const ray& r, const hit_record& rec) const override {
+        vec3 to_center = center - rec.p;
+        vec3 new_direction = r.direction() + 2 * to_center * dot(to_center, r.direction()) / dot(to_center, to_center);
+        return ray(rec.p, new_direction, r.time());
     }
 
     ray deflect_ray(const ray& r) const {
@@ -48,15 +49,13 @@ public:
     }
 
     double computeDeflection(const ray& r) const {
-        // Calculate deflection angle based on gravitational lensing.
-        // For simplicity, we assume that black hole's mass is directly proportional to deflection angle.
-        // Note that this is a simplification and not physically accurate.
         vec3 r_to_center = center - r.origin();
         double distance = r_to_center.length();
 
-        // Assume deflection angle is proportional to mass / distance^2
-        return mass / (distance * distance);
+        // Assume deflection angle is proportional to radius / distance^2
+        return radius / (distance * distance);
     }
+
 
     vec3 rotate(const vec3& v, double angle) const {
         // Rotate vector v by a given angle.
@@ -71,9 +70,9 @@ public:
         return vec3(new_x, new_y, v.z());
     }
 
-public:
+private:
     point3 center;
-    double mass; // We'll use mass to compute deflection angle.
+    double radius; // We'll use radius to compute deflection angle.
 };
 
 #endif //TRACERGEN_BLACKHOLE_H

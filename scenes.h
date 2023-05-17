@@ -23,6 +23,7 @@
 #include "cylinder.h"
 #include "barnsley_fern.h"
 #include "sierpinski_tetrahedron.h"
+#include "blackhole.h"
 
 hittable_list random_scene() {
     hittable_list world;
@@ -330,6 +331,38 @@ hittable_list sierpinski() {
 
     return objects;
 }
+
+hittable_list star_field(int num_stars, double star_radius) {
+    hittable_list stars;
+
+    // Use a random number generator to generate star positions
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(-100, 100);
+
+    auto star_material = make_shared<diffuse_light>(color(1, 1, 1)); // White light
+
+    for (int i = 0; i < num_stars; ++i) {
+        point3 star_position(dis(gen), dis(gen), dis(gen));
+        stars.add(make_shared<sphere>(star_position, star_radius, star_material));
+    }
+
+    return stars;
+}
+
+hittable_list blackhole_scene() {
+    hittable_list objects;
+
+    // Create a black hole at the center of the scene
+    objects.add(make_shared<Blackhole>(point3(0, 0, 0), 10));
+
+    // Add a star field
+    hittable_list stars = star_field(1000, 0.5);
+    objects.add(stars);
+
+    return objects;
+}
+
 
 
 #endif //TRACERGEN_SCENES_H

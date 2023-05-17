@@ -17,6 +17,7 @@
 #include "hittable_list.h"
 #include "camera.h"
 #include "scenes.h"
+#include "blackhole.h"
 
 struct image_settings {
     int image_height;
@@ -28,27 +29,33 @@ struct image_settings {
 
 auto start_time = std::chrono::high_resolution_clock::now();
 
-color ray_color(const ray &r, const color &background, const hittable &world, int depth) {
+color ray_color(const ray& r, const hittable& world, int depth) {
     hit_record rec;
 
     // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0)
-        return color(0, 0, 0);
+        return color(0,0,0);
 
     // If the ray hits nothing, return the background color.
-    if (!world.hit(r, 0.001, infinity, rec))
-        return background;
+    if (!world.hit(r, 0.001, infinity, rec)) {
+        vec3 unit_direction = unit_vector(r.direction());
+        auto t = 0.5*(unit_direction.y() + 1.0);
+        return (1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
+    }
 
-    ray scattered;
+    // Check if the hit object is a Blackhole
+    if(auto* bh = dynamic_cast<Blackhole*>(rec.mat_ptr.get())) {
+        // Modify the ray using Blackhole::interact()
+        ray new_ray = bh->interact(r, rec);
+        return 0.5 * ray_color(new_ray, world, depth-1);
+    }
+
     color attenuation;
-    color emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
-
-    if (!rec.mat_ptr->scatter(r, rec, attenuation, scattered))
-        return emitted;
-
-    return emitted + attenuation * ray_color(scattered, background, world, depth - 1);
+    ray scattered;
+    if (rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+        return attenuation * ray_color(scattered, world, depth-1);
+    return color(0, 0, 0);
 }
-
 
 
 void print_formatted_time(std::ostream& os, int seconds) {
@@ -129,7 +136,6 @@ int main() {
     const int image_width = static_cast<int>(image_height * aspect_ratio);
     const int samples_per_pixel = 50;
     const int max_depth = 5;
-    //const int max_thread = 8;
 
     std::atomic<int> lines_rendered(0);
 
@@ -148,7 +154,7 @@ int main() {
     auto aperture = 0.0;
     color background(0, 0, 0);
 
-    switch (13) {
+    switch (14) {
 
         case 1:
             world = random_scene();
@@ -241,6 +247,12 @@ int main() {
             lookfrom = point3(0, 0, 15);
             lookat = point3(0, 0, 0);
             vfov = 20.0;
+            break;
+        case 14:
+            world = blackhole_scene();
+            settings.background = color(0, 0, 0); // Set background to black
+            lookfrom = point3(50, 50, 50);
+            lookat = point3(0, 0, 0);
             break;
 
     }
