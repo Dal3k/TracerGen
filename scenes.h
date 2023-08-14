@@ -358,10 +358,13 @@ hittable_list blackhole_scene() {
 
     // Add a star field
     hittable_list stars = star_field(1000, 0.5);
-    objects.add(stars);
+    for (auto& star : stars.objects) {
+        objects.add(star);
+    }
 
     return objects;
 }
+
 
 
 

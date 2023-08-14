@@ -31,6 +31,14 @@ public:
         return true;
     }
 
+    bool bounding_box(double time0, double time1, aabb &output_box) const {
+        output_box = aabb(
+                center - vec3(radius, radius, radius),
+                center + vec3(radius, radius, radius));
+        return true;
+    }
+
+
     virtual ray interact(const ray& r, const hit_record& rec) const override {
         vec3 to_center = center - rec.p;
         vec3 new_direction = r.direction() + 2 * to_center * dot(to_center, r.direction()) / dot(to_center, to_center);
